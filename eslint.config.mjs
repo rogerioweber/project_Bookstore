@@ -14,9 +14,7 @@ const config = defineConfig(
   {
     languageOptions: {
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ['*.js', '*.mjs', 'vitest.config.ts']
-        },
+        projectService: true,
         tsconfigRootDir: import.meta.dirname
       },
       sourceType: 'module',
