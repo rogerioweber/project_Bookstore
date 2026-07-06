@@ -6,17 +6,33 @@ CREATE TABLE IF NOT EXISTS autor (
     nome    VARCHAR(150) NOT NULL
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_autor_nome_unico
+ON autor (LOWER(nome));
+
+-- =====================================================================
+-- TABELA: categoria
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS categoria (
+    id      SERIAL PRIMARY KEY,
+    nome    VARCHAR(80) NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categoria_nome_unico
+ON categoria (LOWER(nome));
+
 -- =====================================================================
 -- TABELA: livro
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS livro (
     id                  SERIAL PRIMARY KEY,
     titulo              VARCHAR(200) NOT NULL,
-    categoria           VARCHAR(80),
     total_exemplares    INTEGER NOT NULL DEFAULT 1 CHECK (total_exemplares >= 0),
     status              VARCHAR(20) NOT NULL DEFAULT 'disponivel'
                             CHECK (status IN ('disponivel', 'indisponivel'))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_livro_titulo_unico
+ON livro (LOWER(titulo));
 
 -- =====================================================================
 -- TABELA: livro_autor
@@ -35,6 +51,24 @@ CREATE TABLE IF NOT EXISTS livro_autor (
 );
 
 CREATE INDEX IF NOT EXISTS idx_livro_autor_autor_id ON livro_autor(autor_id);
+
+-- =====================================================================
+-- TABELA: categoria_livro
+-- Relação N:N entre livro e categoria (um livro pode ter várias
+-- categorias e uma categoria pode estar em vários livros)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS categoria_livro (
+    livro_id      INTEGER NOT NULL REFERENCES livro(id)
+                      ON DELETE CASCADE
+                      ON UPDATE CASCADE,
+    categoria_id  INTEGER NOT NULL REFERENCES categoria(id)
+                      ON DELETE CASCADE
+                      ON UPDATE CASCADE,
+
+    PRIMARY KEY (livro_id, categoria_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_categoria_livro_categoria_id ON categoria_livro(categoria_id);
 
 -- =====================================================================
 -- TABELA: funcionario

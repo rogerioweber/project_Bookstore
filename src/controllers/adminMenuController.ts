@@ -1,5 +1,7 @@
+// src/controllers/adminMenuController.ts
 import inquirer from 'inquirer'
 
+import { cadastroLivroController } from './cadastroLivroController'
 import { Funcionario } from '../models/Funcionario'
 
 interface AdminMenuPrompt {
@@ -12,6 +14,7 @@ interface AdminMenuPrompt {
     | 'Relatórios'
     | 'Sair'
 }
+
 async function adminMenuController(funcionario: Funcionario): Promise<void> {
   let continuar = true
 
@@ -33,10 +36,15 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
       }
     ])
 
-    if (opcao === 'Sair') {
-      continuar = false
-    } else {
-      console.log(`Opção "${opcao}" ainda não implementada.`)
+    switch (opcao) {
+      case 'Cadastrar livro':
+        await cadastroLivroController()
+        break
+      case 'Sair':
+        continuar = false
+        break
+      default:
+        console.log(`Opção "${opcao}" ainda não implementada.`)
     }
   }
 }
