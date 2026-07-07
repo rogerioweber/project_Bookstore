@@ -6,6 +6,7 @@ import { cadastroLivroController } from '../controllers/cadastroLivroController'
 import { consultarClienteController } from '../controllers/consultarClienteController'
 import { consultarLivroController } from '../controllers/consultarLivroController'
 import { emprestimoMenuController } from '../controllers/emprestimoController'
+import { relatorioMenuController } from '../controllers/relatorioController'
 import { Funcionario } from '../models/Funcionario'
 
 interface AdminMenuPrompt {
@@ -56,11 +57,14 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
       case 'Gerenciar empréstimos':
         await emprestimoMenuController(funcionario)
         break
+      case 'Relatórios':
+        await relatorioMenuController()
+        break
       case 'Sair':
         continuar = false
         break
       default:
-        console.log(`Opção "${opcao}" ainda não implementada.`)
+        console.log('Erro no sistema')
     }
   }
 }

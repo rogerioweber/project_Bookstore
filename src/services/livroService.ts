@@ -125,6 +125,25 @@ async function removerLivro(id: number): Promise<boolean> {
   return livroRepository.deletar(id)
 }
 
+async function listarLivrosPorStatus(
+  status: StatusLivro
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorStatus(status)
+}
+
+async function buscarLivroPorId(id: number): Promise<Livro | null> {
+  return livroRepository.buscarPorId(id)
+}
+
+async function resolverCategoriaIds(
+  nomesCategorias: string[]
+): Promise<number[]> {
+  const ids: number[] = []
+  for (const nome of nomesCategorias)
+    ids.push(await buscarOuCriarCategoria(nome))
+  return ids
+}
+
 export {
   cadastrarLivro,
   listarLivros,
@@ -135,5 +154,8 @@ export {
   buscarLivroDetalhado,
   atualizarLivro,
   recalcularStatusLivro,
-  removerLivro
+  removerLivro,
+  listarLivrosPorStatus,
+  buscarLivroPorId,
+  resolverCategoriaIds
 }

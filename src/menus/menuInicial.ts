@@ -2,6 +2,7 @@ import inquirer from 'inquirer'
 
 import { adminMenuController } from './adminMenuController'
 import { authMenuController } from './authController'
+import { consultaPublicaController } from '../controllers/consultaSimplesController'
 
 async function menuController(): Promise<boolean> {
   console.log('==============BOOKSTORE==============')
@@ -10,12 +11,12 @@ async function menuController(): Promise<boolean> {
       type: 'select',
       name: 'opcao',
       message: 'Escolha uma opção',
-      choices: ['Login Administrador', 'Consultar', 'Fechar programa']
+      choices: ['Login', 'Consultar', 'Fechar programa']
     }
   ])
 
   switch (resposta.opcao) {
-    case 'Login Administrador': {
+    case 'Login': {
       const funcionario = await authMenuController()
       if (funcionario) {
         await adminMenuController(funcionario)
@@ -23,6 +24,7 @@ async function menuController(): Promise<boolean> {
       return true
     }
     case 'Consultar':
+      await consultaPublicaController()
       return true
     case 'Fechar programa':
       return false

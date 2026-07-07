@@ -1,5 +1,9 @@
-import { Autor } from '../models/Autor'
-import { atualizar, buscarPorNome } from '../repositories/autorRepository'
+import { Autor, AutorComQuantidadeLivros } from '../models/Autor'
+import {
+  buscarPorNome,
+  atualizar,
+  listarComQuantidadeLivros
+} from '../repositories/autorRepository'
 import { capitalizar } from '../utils/texto'
 
 async function buscarAutorPorNome(nome: string): Promise<Autor | null> {
@@ -20,4 +24,14 @@ async function atualizarNomeAutor(id: number, nome: string): Promise<Autor> {
   return atualizar(id, nomeNormalizado)
 }
 
-export { atualizarNomeAutor, buscarAutorPorNome }
+async function listarAutoresComQuantidadeLivros(): Promise<
+  AutorComQuantidadeLivros[]
+> {
+  return listarComQuantidadeLivros()
+}
+
+export {
+  atualizarNomeAutor,
+  buscarAutorPorNome,
+  listarAutoresComQuantidadeLivros
+}

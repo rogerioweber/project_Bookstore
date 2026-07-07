@@ -1,18 +1,13 @@
 import { pool } from '../database/connection'
 import {
   Livro,
+  CriarLivroInput,
   LivroListagem,
   LivroDetalhado,
   OrdenarLivrosPor,
-  AtualizarLivroInput
+  AtualizarLivroInput,
+  StatusLivro
 } from '../models/Livro'
-
-interface CriarLivroInput {
-  titulo: string
-  totalExemplares: number
-  autorIds: number[]
-  categoriaIds: number[]
-}
 
 function colunaOrdenacao(ordenarPor: OrdenarLivrosPor): string {
   if (ordenarPor === 'autor') return 'MIN(a.nome)'
@@ -293,6 +288,25 @@ async function deletar(id: number): Promise<boolean> {
   return (result.rowCount ?? 0) > 0
 }
 
+async function listarPorStatus(status: StatusLivro): Promise<LivroListagem[]> {
+  const result = await pool.query<LivroListagem>(
+    `SELECT
+       l.id, l.titulo, l.total_exemplares, l.status,
+       STRING_AGG(DISTINCT a.nome, ', ' ORDER BY a.nome) AS autores,
+       STRING_AGG(DISTINCT c.nome, ', ' ORDER BY c.nome) AS categorias
+     FROM livro l
+     LEFT JOIN livro_autor la ON la.livro_id = l.id
+     LEFT JOIN autor a ON a.id = la.autor_id
+     LEFT JOIN categoria_livro cl ON cl.livro_id = l.id
+     LEFT JOIN categoria c ON c.id = cl.categoria_id
+     WHERE l.status = $1
+     GROUP BY l.id
+     ORDER BY l.titulo`,
+    [status]
+  )
+  return result.rows
+}
+
 export {
   listarTodos,
   listarPorAutor,
@@ -305,5 +319,6 @@ export {
   atualizarStatus,
   criar,
   atualizar,
-  deletar
+  deletar,
+  listarPorStatus
 }
