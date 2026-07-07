@@ -1,0 +1,60 @@
+// src/controllers/adminMenuController.ts
+import inquirer from 'inquirer'
+
+import { cadastroClienteController } from './cadastroClienteController'
+import { cadastroLivroController } from './cadastroLivroController'
+import { consultarLivroController } from './consultarLivroController'
+import { Funcionario } from '../models/Funcionario'
+
+interface AdminMenuPrompt {
+  opcao:
+    | 'Cadastrar livro'
+    | 'Consultar livros'
+    | 'Cadastrar cliente'
+    | 'Consultar clientes'
+    | 'Gerenciar empréstimos'
+    | 'Relatórios'
+    | 'Sair'
+}
+
+async function adminMenuController(funcionario: Funcionario): Promise<void> {
+  let continuar = true
+
+  while (continuar) {
+    const { opcao } = await inquirer.prompt<AdminMenuPrompt>([
+      {
+        type: 'select',
+        name: 'opcao',
+        message: `Menu Administrador (${funcionario.nome})`,
+        choices: [
+          'Cadastrar livro',
+          'Consultar livros',
+          'Cadastrar cliente',
+          'Consultar clientes',
+          'Gerenciar empréstimos',
+          'Relatórios',
+          'Sair'
+        ]
+      }
+    ])
+
+    switch (opcao) {
+      case 'Cadastrar livro':
+        await cadastroLivroController()
+        break
+      case 'Consultar livros':
+        await consultarLivroController()
+        break
+      case 'Cadastrar cliente':
+        await cadastroClienteController()
+        break
+      case 'Sair':
+        continuar = false
+        break
+      default:
+        console.log(`Opção "${opcao}" ainda não implementada.`)
+    }
+  }
+}
+
+export { adminMenuController }
