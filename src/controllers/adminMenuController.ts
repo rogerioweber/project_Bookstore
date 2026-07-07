@@ -1,15 +1,17 @@
 // src/controllers/adminMenuController.ts
 import inquirer from 'inquirer'
 
+import { cadastroClienteController } from './cadastroClienteController'
 import { cadastroLivroController } from './cadastroLivroController'
+import { consultarLivroController } from './consultarLivroController'
 import { Funcionario } from '../models/Funcionario'
 
 interface AdminMenuPrompt {
   opcao:
     | 'Cadastrar livro'
     | 'Consultar livros'
-    | 'Atualizar livro'
-    | 'Remover livro'
+    | 'Cadastrar cliente'
+    | 'Consultar clientes'
     | 'Gerenciar empréstimos'
     | 'Relatórios'
     | 'Sair'
@@ -27,8 +29,8 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
         choices: [
           'Cadastrar livro',
           'Consultar livros',
-          'Atualizar livro',
-          'Remover livro',
+          'Cadastrar cliente',
+          'Consultar clientes',
           'Gerenciar empréstimos',
           'Relatórios',
           'Sair'
@@ -39,6 +41,12 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
     switch (opcao) {
       case 'Cadastrar livro':
         await cadastroLivroController()
+        break
+      case 'Consultar livros':
+        await consultarLivroController()
+        break
+      case 'Cadastrar cliente':
+        await cadastroClienteController()
         break
       case 'Sair':
         continuar = false

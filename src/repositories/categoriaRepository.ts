@@ -18,4 +18,11 @@ async function criar(nome: string): Promise<Categoria> {
   return result.rows[0]
 }
 
-export { buscarPorNome, criar }
+async function listarTodos(): Promise<Categoria[]> {
+  const result = await pool.query<Categoria>(
+    'SELECT * FROM categoria ORDER BY nome'
+  )
+  return result.rows
+}
+
+export { buscarPorNome, criar, listarTodos }

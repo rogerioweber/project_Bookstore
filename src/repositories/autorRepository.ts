@@ -1,4 +1,3 @@
-// src/repositories/AutorRepository.ts
 import { pool } from '../database/connection'
 import { Autor } from '../models/Autor'
 
@@ -18,4 +17,12 @@ async function criar(nome: string): Promise<Autor> {
   return result.rows[0]
 }
 
-export { buscarPorNome, criar }
+async function atualizar(id: number, nome: string): Promise<Autor> {
+  const result = await pool.query<Autor>(
+    'UPDATE autor SET nome = $1 WHERE id = $2 RETURNING *',
+    [nome, id]
+  )
+  return result.rows[0]
+}
+
+export { buscarPorNome, criar, atualizar }

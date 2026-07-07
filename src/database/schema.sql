@@ -100,20 +100,23 @@ CREATE TABLE IF NOT EXISTS usuario (
 -- usuário, com o funcionário responsável pelo registro
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS reserva_acervo (
-    id                SERIAL PRIMARY KEY,
-    livro_id          INTEGER NOT NULL REFERENCES livro(id)
-                          ON DELETE RESTRICT
-                          ON UPDATE CASCADE,
-    funcionario_id    INTEGER NOT NULL REFERENCES funcionario(id)
-                          ON DELETE RESTRICT
-                          ON UPDATE CASCADE,
-    usuario_id        INTEGER NOT NULL REFERENCES usuario(id)
-                          ON DELETE RESTRICT
-                          ON UPDATE CASCADE,
-    data_reserva      DATE NOT NULL DEFAULT CURRENT_DATE,
-    data_devolucao    DATE,
-    status            VARCHAR(20) NOT NULL DEFAULT 'ativa'
-                          CHECK (status IN ('ativa', 'devolvida', 'atrasada')),
+    id                          SERIAL PRIMARY KEY,
+    livro_id                    INTEGER NOT NULL REFERENCES livro(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    funcionario_id              INTEGER NOT NULL REFERENCES funcionario(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    funcionario_devolucao_id    INTEGER REFERENCES funcionario(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    usuario_id                  INTEGER NOT NULL REFERENCES usuario(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    data_reserva                DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_devolucao               DATE,
+    status                      VARCHAR(20) NOT NULL DEFAULT 'ativa'
+                                    CHECK (status IN ('ativa', 'devolvida', 'atrasada')),
 
     CONSTRAINT chk_data_devolucao_apos_reserva
         CHECK (data_devolucao IS NULL OR data_devolucao >= data_reserva)
