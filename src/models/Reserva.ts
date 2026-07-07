@@ -17,3 +17,10 @@ export interface ReservaDetalhada extends Reserva {
   funcionario_emprestou_nome: string
   funcionario_devolveu_nome: string | null
 }
+
+export interface LivroEmprestadoResumo {
+  livro_id: number
+  livro_titulo: string
+  total_exemplares: number
+  exemplares_emprestados: number
+}

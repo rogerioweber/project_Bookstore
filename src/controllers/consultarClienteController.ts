@@ -46,18 +46,26 @@ async function consultarClienteController(): Promise<void> {
       return
     }
 
-    const { clienteId } = await inquirer.prompt<{ clienteId: number }>([
+    const { clienteId } = await inquirer.prompt<{
+      clienteId: number | 'voltar'
+    }>([
       {
         type: 'select',
         name: 'clienteId',
         message: 'Selecione o cliente:',
-        choices: encontrados.map((c) => ({
-          name: `${c.nome} ${c.sobrenome} — CPF ${c.cpf}`,
-          value: c.id
-        }))
+        choices: [
+          ...encontrados.map((c) => ({
+            name: `${c.nome} ${c.sobrenome} — CPF ${c.cpf}`,
+            value: c.id
+          })),
+          { name: 'Voltar', value: 'voltar' as const }
+        ]
       }
     ])
 
+    if (clienteId === 'voltar') {
+      return
+    }
     cliente = encontrados.find((c) => c.id === clienteId) ?? null
   }
 
@@ -87,7 +95,7 @@ async function exibirDetalheCliente(cliente: Cliente): Promise<void> {
         )
       } else {
         console.log(
-          `"${r.livro_titulo}" — devolvido em ${r.data_devolucao ?? '—'} (emprestado em ${r.data_reserva} por ${r.funcionario_emprestou_nome}, devolução registrada por ${r.funcionario_devolveu_nome ?? '—'})`
+          `"${r.livro_titulo}" — devolvido em ${r.data_devolucao ?? '—'} (emprestado em ${r.data_reserva} ( por ${r.funcionario_emprestou_nome}), devolução registrada por ${r.funcionario_devolveu_nome ?? '—'})`
         )
       }
     }

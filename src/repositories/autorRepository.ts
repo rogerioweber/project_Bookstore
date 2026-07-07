@@ -1,5 +1,5 @@
 import { pool } from '../database/connection'
-import { Autor } from '../models/Autor'
+import { Autor, AutorComQuantidadeLivros } from '../models/Autor'
 
 async function buscarPorNome(nome: string): Promise<Autor | null> {
   const result = await pool.query<Autor>(
@@ -25,4 +25,20 @@ async function atualizar(id: number, nome: string): Promise<Autor> {
   return result.rows[0]
 }
 
-export { buscarPorNome, criar, atualizar }
+async function listarComQuantidadeLivros(): Promise<
+  AutorComQuantidadeLivros[]
+> {
+  const result = await pool.query<AutorComQuantidadeLivros>(
+    `SELECT
+       a.id AS autor_id,
+       a.nome AS autor_nome,
+       COUNT(la.livro_id)::int AS quantidade_livros
+     FROM autor a
+     LEFT JOIN livro_autor la ON la.autor_id = a.id
+     GROUP BY a.id, a.nome
+     ORDER BY a.nome`
+  )
+  return result.rows
+}
+
+export { buscarPorNome, criar, atualizar, listarComQuantidadeLivros }

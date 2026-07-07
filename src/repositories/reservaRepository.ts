@@ -1,10 +1,15 @@
 import { pool } from '../database/connection'
-import { Reserva, ReservaDetalhada } from '../models/Reserva'
+import { ClienteComEmprestimoAtivo } from '../models/Cliente'
+import {
+  LivroEmprestadoResumo,
+  Reserva,
+  ReservaDetalhada
+} from '../models/Reserva'
 
 async function contarAtivasPorLivro(livroId: number): Promise<number> {
   const result = await pool.query<{ total: string }>(
     `SELECT COUNT(*)::int AS total FROM reserva_acervo
-     WHERE livro_id = $1 AND status = 'ativa'`,
+     WHERE livro_id = $1 AND status IN ('ativa', 'atrasada')`,
     [livroId]
   )
   return Number(result.rows[0].total)
@@ -13,12 +18,13 @@ async function contarAtivasPorLivro(livroId: number): Promise<number> {
 async function criar(
   livroId: number,
   funcionarioId: number,
-  clienteId: number
+  clienteId: number,
+  dataPrevistaDevolucao: string
 ): Promise<Reserva> {
   const result = await pool.query<Reserva>(
-    `INSERT INTO reserva_acervo (livro_id, funcionario_id, cliente_id)
-     VALUES ($1, $2, $3) RETURNING *`,
-    [livroId, funcionarioId, clienteId]
+    `INSERT INTO reserva_acervo (livro_id, funcionario_id, cliente_id, data_prevista_devolucao)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [livroId, funcionarioId, clienteId, dataPrevistaDevolucao]
   )
   return result.rows[0]
 }
@@ -40,12 +46,15 @@ async function listarAtivasPorLivro(
        l.titulo AS livro_titulo,
        (c.nome || ' ' || c.sobrenome) AS cliente_nome,
        (f.nome || ' ' || f.sobrenome) AS funcionario_emprestou_nome,
-       NULL AS funcionario_devolveu_nome
+       NULL AS funcionario_devolveu_nome,
+       TO_CHAR(r.data_reserva, 'DD/MM/YYYY HH24:MI') AS data_reserva,
+       TO_CHAR(r.data_devolucao, 'DD/MM/YYYY HH24:MI') AS data_devolucao,
+       TO_CHAR(r.data_prevista_devolucao, 'DD/MM/YYYY') AS data_prevista_devolucao
      FROM reserva_acervo r
      INNER JOIN livro l ON l.id = r.livro_id
      INNER JOIN cliente c ON c.id = r.cliente_id
      INNER JOIN funcionario f ON f.id = r.funcionario_id
-     WHERE r.livro_id = $1 AND r.status = 'ativa'
+     WHERE r.livro_id = $1 AND r.status IN ('ativa', 'atrasada')
      ORDER BY r.data_reserva ASC`,
     [livroId]
   )
@@ -61,7 +70,10 @@ async function listarHistoricoPorLivro(
        l.titulo AS livro_titulo,
        (c.nome || ' ' || c.sobrenome) AS cliente_nome,
        (f.nome || ' ' || f.sobrenome) AS funcionario_emprestou_nome,
-       (fd.nome || ' ' || fd.sobrenome) AS funcionario_devolveu_nome
+       (fd.nome || ' ' || fd.sobrenome) AS funcionario_devolveu_nome,
+       TO_CHAR(r.data_reserva, 'DD/MM/YYYY HH24:MI') AS data_reserva,
+       TO_CHAR(r.data_devolucao, 'DD/MM/YYYY HH24:MI') AS data_devolucao,
+       TO_CHAR(r.data_prevista_devolucao, 'DD/MM/YYYY') AS data_prevista_devolucao
      FROM reserva_acervo r
      INNER JOIN livro l ON l.id = r.livro_id
      INNER JOIN cliente c ON c.id = r.cliente_id
@@ -83,7 +95,10 @@ async function listarHistoricoPorCliente(
        l.titulo AS livro_titulo,
        (c.nome || ' ' || c.sobrenome) AS cliente_nome,
        (f.nome || ' ' || f.sobrenome) AS funcionario_emprestou_nome,
-       (fd.nome || ' ' || fd.sobrenome) AS funcionario_devolveu_nome
+       (fd.nome || ' ' || fd.sobrenome) AS funcionario_devolveu_nome,
+       TO_CHAR(r.data_reserva, 'DD/MM/YYYY HH24:MI') AS data_reserva,
+       TO_CHAR(r.data_devolucao, 'DD/MM/YYYY HH24:MI') AS data_devolucao,
+       TO_CHAR(r.data_prevista_devolucao, 'DD/MM/YYYY') AS data_prevista_devolucao
      FROM reserva_acervo r
      INNER JOIN livro l ON l.id = r.livro_id
      INNER JOIN cliente c ON c.id = r.cliente_id
@@ -109,6 +124,65 @@ async function registrarDevolucao(
   )
 }
 
+async function listarLivrosComEmprestimoAtivo(): Promise<
+  LivroEmprestadoResumo[]
+> {
+  const result = await pool.query<LivroEmprestadoResumo>(
+    `SELECT
+       l.id AS livro_id,
+       l.titulo AS livro_titulo,
+       l.total_exemplares,
+       COUNT(r.id)::int AS exemplares_emprestados
+     FROM reserva_acervo r
+     INNER JOIN livro l ON l.id = r.livro_id
+     WHERE r.status IN ('ativa', 'atrasada')
+     GROUP BY l.id, l.titulo, l.total_exemplares
+     ORDER BY l.titulo`
+  )
+  return result.rows
+}
+
+async function listarClientesComEmprestimoAtivo(): Promise<
+  ClienteComEmprestimoAtivo[]
+> {
+  const result = await pool.query<ClienteComEmprestimoAtivo>(
+    `SELECT
+       c.id AS cliente_id,
+       (c.nome || ' ' || c.sobrenome) AS cliente_nome,
+       c.cpf AS cliente_cpf,
+       l.titulo AS livro_titulo,
+       r.status,
+       TO_CHAR(r.data_reserva, 'DD/MM/YYYY HH24:MI') AS data_reserva,
+       TO_CHAR(r.data_devolucao, 'DD/MM/YYYY HH24:MI') AS data_devolucao,
+       TO_CHAR(r.data_prevista_devolucao, 'DD/MM/YYYY') AS data_prevista_devolucao
+     FROM reserva_acervo r
+     INNER JOIN cliente c ON c.id = r.cliente_id
+     INNER JOIN livro l ON l.id = r.livro_id
+     WHERE r.status IN ('ativa', 'atrasada')
+     ORDER BY cliente_nome, r.data_reserva`
+  )
+  return result.rows
+}
+
+async function existeReservaAtivaPorCliente(
+  clienteId: number
+): Promise<boolean> {
+  const result = await pool.query<{ total: string }>(
+    `SELECT COUNT(*)::int AS total FROM reserva_acervo
+     WHERE cliente_id = $1 AND status IN ('ativa', 'atrasada')`,
+    [clienteId]
+  )
+  return Number(result.rows[0].total) > 0
+}
+
+async function atualizarStatusAtrasados(): Promise<void> {
+  await pool.query(
+    `UPDATE reserva_acervo
+     SET status = 'atrasada'
+     WHERE status = 'ativa' AND data_prevista_devolucao < CURRENT_DATE`
+  )
+}
+
 export {
   contarAtivasPorLivro,
   criar,
@@ -116,5 +190,9 @@ export {
   listarAtivasPorLivro,
   listarHistoricoPorLivro,
   listarHistoricoPorCliente,
-  registrarDevolucao
+  registrarDevolucao,
+  listarLivrosComEmprestimoAtivo,
+  listarClientesComEmprestimoAtivo,
+  existeReservaAtivaPorCliente,
+  atualizarStatusAtrasados
 }

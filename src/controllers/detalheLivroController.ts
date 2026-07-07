@@ -7,7 +7,8 @@ import {
 import {
   buscarLivroDetalhado,
   atualizarLivro,
-  removerLivro
+  removerLivro,
+  resolverCategoriaIds
 } from '../services/livroService'
 
 async function detalheLivroController(livroId: number): Promise<void> {
@@ -127,6 +128,7 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
   const resposta = await inquirer.prompt<{
     titulo: string
     totalExemplares: number
+    categorias: string
   }>([
     {
       type: 'input',
@@ -139,14 +141,32 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
       name: 'totalExemplares',
       message: 'Nova quantidade de exemplares:',
       default: livro.total_exemplares
+    },
+    {
+      type: 'input',
+      name: 'categorias',
+      message: 'Categoria(s) (separe por vírgula):',
+      default: livro.categorias.map((c) => c.nome).join(', ')
     }
   ])
+
+  const nomesCategorias = resposta.categorias
+    .split(',')
+    .map((nome) => nome.trim())
+    .filter((nome) => nome.length > 0)
+
+  if (nomesCategorias.length === 0) {
+    console.log('É necessário informar ao menos uma categoria.')
+    return
+  }
+
+  const categoriaIds = await resolverCategoriaIds(nomesCategorias)
 
   await atualizarLivro(livroId, {
     titulo: resposta.titulo,
     totalExemplares: resposta.totalExemplares,
     autorIds: autoresAtualizados.map((a) => a.id),
-    categoriaIds: livro.categorias.map((c) => c.id)
+    categoriaIds
   })
 
   console.log('Livro atualizado com sucesso!')

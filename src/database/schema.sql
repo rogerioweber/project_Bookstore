@@ -134,13 +134,16 @@ CREATE TABLE IF NOT EXISTS reserva_acervo (
     cliente_id                  INTEGER NOT NULL REFERENCES cliente(id)
                                     ON DELETE RESTRICT
                                     ON UPDATE CASCADE,
-    data_reserva                DATE NOT NULL DEFAULT CURRENT_DATE,
-    data_devolucao              DATE,
+    data_reserva                TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_prevista_devolucao     DATE NOT NULL,
+    data_devolucao              TIMESTAMP,
     status                      VARCHAR(20) NOT NULL DEFAULT 'ativa'
                                     CHECK (status IN ('ativa', 'devolvida', 'atrasada')),
 
     CONSTRAINT chk_data_devolucao_apos_reserva
-        CHECK (data_devolucao IS NULL OR data_devolucao >= data_reserva)
+        CHECK (data_devolucao IS NULL OR data_devolucao >= data_reserva),
+    CONSTRAINT chk_prevista_apos_reserva
+        CHECK (data_prevista_devolucao >= data_reserva::date)
 );
 
 CREATE INDEX IF NOT EXISTS idx_reserva_livro_id ON reserva_acervo(livro_id);

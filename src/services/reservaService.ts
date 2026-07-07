@@ -6,8 +6,19 @@ import * as reservaRepository from '../repositories/reservaRepository'
 async function emprestarLivro(
   livroId: number,
   funcionarioId: number,
-  clienteId: number
+  clienteId: number,
+  prazoDias: number
 ): Promise<void> {
+  await reservaRepository.atualizarStatusAtrasados()
+
+  const possuiEmprestimoAtivo =
+    await reservaRepository.existeReservaAtivaPorCliente(clienteId)
+  if (possuiEmprestimoAtivo) {
+    throw new Error(
+      'Este cliente já possui um livro emprestado. É preciso devolvê-lo antes de pegar outro.'
+    )
+  }
+
   const livro = await livroRepository.buscarPorId(livroId)
   if (!livro) throw new Error('Livro não encontrado')
 
@@ -16,7 +27,17 @@ async function emprestarLivro(
     throw new Error('Não há exemplares disponíveis para empréstimo')
   }
 
-  await reservaRepository.criar(livroId, funcionarioId, clienteId)
+  const hoje = new Date()
+  const dataPrevista = new Date(hoje)
+  dataPrevista.setDate(dataPrevista.getDate() + prazoDias)
+  const dataPrevistaFormatada = dataPrevista.toISOString().slice(0, 10)
+
+  await reservaRepository.criar(
+    livroId,
+    funcionarioId,
+    clienteId,
+    dataPrevistaFormatada
+  )
   await recalcularStatusLivro(livroId)
 }
 
@@ -27,7 +48,7 @@ async function devolverLivro(
 ): Promise<void> {
   const reserva = await reservaRepository.buscarPorId(reservaId)
   if (!reserva) throw new Error('Reserva não encontrada')
-  if (reserva.status !== 'ativa')
+  if (reserva.status === 'devolvida')
     throw new Error('Essa reserva já foi encerrada')
 
   await reservaRepository.registrarDevolucao(
@@ -41,19 +62,32 @@ async function devolverLivro(
 async function listarAtivasPorLivro(
   livroId: number
 ): Promise<ReservaDetalhada[]> {
+  await reservaRepository.atualizarStatusAtrasados()
   return reservaRepository.listarAtivasPorLivro(livroId)
 }
 
 async function listarHistoricoPorLivro(
   livroId: number
 ): Promise<ReservaDetalhada[]> {
+  await reservaRepository.atualizarStatusAtrasados()
   return reservaRepository.listarHistoricoPorLivro(livroId)
 }
 
 async function listarHistoricoPorCliente(
   clienteId: number
 ): Promise<ReservaDetalhada[]> {
+  await reservaRepository.atualizarStatusAtrasados()
   return reservaRepository.listarHistoricoPorCliente(clienteId)
+}
+
+async function listarLivrosComEmprestimoAtivo() {
+  await reservaRepository.atualizarStatusAtrasados()
+  return reservaRepository.listarLivrosComEmprestimoAtivo()
+}
+
+async function listarClientesComEmprestimoAtivo() {
+  await reservaRepository.atualizarStatusAtrasados()
+  return reservaRepository.listarClientesComEmprestimoAtivo()
 }
 
 export {
@@ -61,5 +95,7 @@ export {
   devolverLivro,
   listarAtivasPorLivro,
   listarHistoricoPorLivro,
-  listarHistoricoPorCliente
+  listarHistoricoPorCliente,
+  listarClientesComEmprestimoAtivo,
+  listarLivrosComEmprestimoAtivo
 }

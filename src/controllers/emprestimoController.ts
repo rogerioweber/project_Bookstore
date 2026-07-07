@@ -7,12 +7,14 @@ import {
   buscarClientesPorNome,
   cadastrarCliente
 } from '../services/clienteService'
-import { listarLivrosPorTituloOuAutor } from '../services/livroService'
+import {
+  buscarLivroPorId,
+  listarLivrosPorTituloOuAutor
+} from '../services/livroService'
 import {
   emprestarLivro,
   devolverLivro,
-  listarAtivasPorLivro,
-  listarHistoricoPorLivro
+  listarAtivasPorLivro
 } from '../services/reservaService'
 
 async function emprestimoMenuController(
@@ -20,24 +22,13 @@ async function emprestimoMenuController(
 ): Promise<void> {
   for (;;) {
     const { opcao } = await inquirer.prompt<{
-      opcao:
-        | 'Emprestar livro'
-        | 'Devolver livro'
-        | 'Ver quem está com o livro'
-        | 'Ver histórico do livro'
-        | 'Voltar'
+      opcao: 'Emprestar livro' | 'Devolver livro' | 'Voltar'
     }>([
       {
         type: 'select',
         name: 'opcao',
         message: 'Gerenciar empréstimos',
-        choices: [
-          'Emprestar livro',
-          'Devolver livro',
-          'Ver quem está com o livro',
-          'Ver histórico do livro',
-          'Voltar'
-        ]
+        choices: ['Emprestar livro', 'Devolver livro', 'Voltar']
       }
     ])
 
@@ -46,8 +37,6 @@ async function emprestimoMenuController(
     try {
       if (opcao === 'Emprestar livro') await emprestarFluxo(funcionario)
       if (opcao === 'Devolver livro') await devolverFluxo(funcionario)
-      if (opcao === 'Ver quem está com o livro') await verAtivasFluxo()
-      if (opcao === 'Ver histórico do livro') await verHistoricoFluxo()
     } catch (error) {
       console.log((error as Error).message)
     }
@@ -210,13 +199,35 @@ async function emprestarFluxo(funcionario: Funcionario): Promise<void> {
   const livroId = await selecionarLivroFluxo()
   if (livroId === null) return
 
+  const livro = await buscarLivroPorId(livroId)
+  if (!livro) {
+    console.log('Livro não encontrado.')
+    return
+  }
+
+  if (livro.status === 'indisponivel') {
+    console.log(
+      `O livro "${livro.titulo}" não está disponível para empréstimo no momento.`
+    )
+    return
+  }
+
   const cliente = await selecionarClienteFluxo()
   if (!cliente) {
     console.log('Operação cancelada.')
     return
   }
 
-  await emprestarLivro(livroId, funcionario.id, cliente.id)
+  const { prazoDias } = await inquirer.prompt<{ prazoDias: number }>([
+    {
+      type: 'number',
+      name: 'prazoDias',
+      message: 'Prazo para devolução (em dias):',
+      default: 7
+    }
+  ])
+
+  await emprestarLivro(livroId, funcionario.id, cliente.id, prazoDias)
   console.log('Empréstimo registrado com sucesso!')
 }
 
@@ -254,49 +265,6 @@ async function devolverFluxo(funcionario: Funcionario): Promise<void> {
 
   await devolverLivro(reservaId, funcionario.id, dataDevolucao)
   console.log('Devolução registrada com sucesso!')
-}
-
-async function verAtivasFluxo(): Promise<void> {
-  const livroId = await selecionarLivroFluxo()
-  if (livroId === null) return
-
-  const ativas = await listarAtivasPorLivro(livroId)
-
-  if (ativas.length === 0) {
-    console.log('Nenhum exemplar emprestado no momento.')
-    return
-  }
-
-  console.log('\n----- Com quem o livro está -----')
-  for (const r of ativas) {
-    console.log(
-      `${r.cliente_nome} — desde ${r.data_reserva} (registrado por ${r.funcionario_emprestou_nome})`
-    )
-  }
-  console.log('----------------------------------\n')
-}
-
-async function verHistoricoFluxo(): Promise<void> {
-  const livroId = await selecionarLivroFluxo()
-  if (livroId === null) return
-
-  const historico = await listarHistoricoPorLivro(livroId)
-
-  if (historico.length === 0) {
-    console.log('Nenhum histórico de empréstimo para esse livro.')
-    return
-  }
-
-  console.log('\n----- Histórico de empréstimos -----')
-  for (const r of historico) {
-    const devolucao = r.data_devolucao
-      ? `devolvido em ${r.data_devolucao} (por ${r.funcionario_devolveu_nome ?? '—'})`
-      : 'ainda não devolvido'
-    console.log(
-      `${r.cliente_nome} — emprestado em ${r.data_reserva} por ${r.funcionario_emprestou_nome} | ${devolucao}`
-    )
-  }
-  console.log('-------------------------------------\n')
 }
 
 export { emprestimoMenuController }
