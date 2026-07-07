@@ -3,11 +3,13 @@ import {
   LivroListagem,
   LivroDetalhado,
   OrdenarLivrosPor,
-  AtualizarLivroInput
+  AtualizarLivroInput,
+  StatusLivro
 } from '../models/Livro'
 import * as autorRepository from '../repositories/autorRepository'
 import * as categoriaRepository from '../repositories/categoriaRepository'
 import * as livroRepository from '../repositories/livroRepository'
+import * as reservaRepository from '../repositories/reservaRepository'
 import { capitalizar } from '../utils/texto'
 
 async function buscarOuCriarAutor(nome: string): Promise<number> {
@@ -78,6 +80,12 @@ async function listarLivrosPorTitulo(
   return livroRepository.listarPorTituloParcial(tituloBusca)
 }
 
+async function listarLivrosPorTituloOuAutor(
+  termo: string
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorTituloOuAutor(termo)
+}
+
 async function listarLivrosPorCategorias(
   nomesCategorias: string[]
 ): Promise<LivroListagem[]> {
@@ -100,6 +108,19 @@ async function atualizarLivro(
   return livroRepository.atualizar(id, dados)
 }
 
+async function recalcularStatusLivro(livroId: number): Promise<void> {
+  const livro = await livroRepository.buscarPorId(livroId)
+  if (!livro) return
+
+  const ativas = await reservaRepository.contarAtivasPorLivro(livroId)
+  const novoStatus: StatusLivro =
+    ativas >= livro.total_exemplares ? 'indisponivel' : 'disponivel'
+
+  if (novoStatus !== livro.status) {
+    await livroRepository.atualizarStatus(livroId, novoStatus)
+  }
+}
+
 async function removerLivro(id: number): Promise<boolean> {
   return livroRepository.deletar(id)
 }
@@ -109,8 +130,10 @@ export {
   listarLivros,
   listarLivrosPorAutor,
   listarLivrosPorTitulo,
+  listarLivrosPorTituloOuAutor,
   listarLivrosPorCategorias,
   buscarLivroDetalhado,
   atualizarLivro,
+  recalcularStatusLivro,
   removerLivro
 }

@@ -3,7 +3,9 @@ import inquirer from 'inquirer'
 
 import { cadastroClienteController } from './cadastroClienteController'
 import { cadastroLivroController } from './cadastroLivroController'
+import { consultarClienteController } from './consultarClienteController'
 import { consultarLivroController } from './consultarLivroController'
+import { emprestimoMenuController } from './emprestimoController'
 import { Funcionario } from '../models/Funcionario'
 
 interface AdminMenuPrompt {
@@ -47,6 +49,12 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
         break
       case 'Cadastrar cliente':
         await cadastroClienteController()
+        break
+      case 'Consultar clientes':
+        await consultarClienteController()
+        break
+      case 'Gerenciar empréstimos':
+        await emprestimoMenuController(funcionario)
         break
       case 'Sair':
         continuar = false

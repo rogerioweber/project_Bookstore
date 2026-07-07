@@ -8,26 +8,29 @@ async function cadastroClienteController(): Promise<void> {
     sobrenome: string
     cpf: string
     email: string
+    telefone: string
   }>([
     { type: 'input', name: 'nome', message: 'Nome:' },
     { type: 'input', name: 'sobrenome', message: 'Sobrenome:' },
     {
       type: 'input',
       name: 'cpf',
-      message: 'CPF (somente números ou com pontuação):'
+      message: 'CPF (somente números):'
     },
-    { type: 'input', name: 'email', message: 'Email (opcional):' }
+    { type: 'input', name: 'email', message: 'Email:' },
+    { type: 'input', name: 'telefone', message: 'Telefone:' }
   ])
 
   try {
-    const usuario = await cadastrarCliente(
+    const cliente = await cadastrarCliente(
       resposta.nome,
       resposta.sobrenome,
       resposta.cpf,
-      resposta.email.trim() || null
+      resposta.email,
+      resposta.telefone
     )
     console.log(
-      `Cliente "${usuario.nome} ${usuario.sobrenome}" cadastrado com sucesso! (id: ${String(usuario.id)})`
+      `Cliente "${cliente.nome} ${cliente.sobrenome}" cadastrado com sucesso!`
     )
   } catch (error) {
     console.log((error as Error).message)
