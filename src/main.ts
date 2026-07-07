@@ -1,5 +1,5 @@
-import { menuController } from './controllers/menu'
 import { testConnection } from './database/connection'
+import { menuController } from './menus/menuInicial'
 
 async function main() {
   console.log('Iniciando programa BookStore')

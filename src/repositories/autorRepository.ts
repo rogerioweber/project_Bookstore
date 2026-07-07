@@ -3,7 +3,7 @@ import { Autor } from '../models/Autor'
 
 async function buscarPorNome(nome: string): Promise<Autor | null> {
   const result = await pool.query<Autor>(
-    'SELECT * FROM autor WHERE LOWER(nome) = LOWER($1)',
+    'SELECT * FROM autor WHERE LOWER(imutavel_unaccent(nome)) = LOWER(imutavel_unaccent($1))',
     [nome]
   )
   return result.rows[0] ?? null

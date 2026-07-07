@@ -189,7 +189,7 @@ async function buscarDetalhadoPorId(
 
 async function buscarPorTitulo(titulo: string): Promise<Livro | null> {
   const result = await pool.query<Livro>(
-    'SELECT * FROM livro WHERE LOWER(titulo) = LOWER($1)',
+    'SELECT * FROM livro WHERE LOWER(imutavel_unaccent(titulo)) = LOWER(imutavel_unaccent($1))',
     [titulo]
   )
   return result.rows[0] ?? null

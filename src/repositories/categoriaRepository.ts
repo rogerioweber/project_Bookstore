@@ -4,7 +4,7 @@ import { Categoria } from '../models/Categoria'
 
 async function buscarPorNome(nome: string): Promise<Categoria | null> {
   const result = await pool.query<Categoria>(
-    'SELECT * FROM categoria WHERE LOWER(nome) = LOWER($1)',
+    'SELECT * FROM categoria WHERE LOWER(imutavel_unaccent(nome)) = LOWER(imutavel_unaccent($1))',
     [nome]
   )
   return result.rows[0] ?? null

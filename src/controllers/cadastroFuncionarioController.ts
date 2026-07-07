@@ -40,9 +40,8 @@ async function cadastroFuncionarioController(): Promise<Funcionario | null> {
 
     console.log('Funcionário cadastrado com sucesso!')
     return funcionario
-  } catch (error) {
+  } catch {
     console.log('Erro ao cadastrar. O email já pode estar em uso.')
-    console.error(error)
     return null
   }
 }

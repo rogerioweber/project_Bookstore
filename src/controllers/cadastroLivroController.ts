@@ -49,12 +49,10 @@ async function cadastroLivroController(): Promise<void> {
       nomesCategorias
     )
 
-    console.log(
-      `Livro "${livro.titulo}" cadastrado com sucesso! (id: ${String(livro.id)})`
-    )
-  } catch (error) {
-    console.log('Erro ao cadastrar livro:')
-    console.error(error)
+    console.log(`Livro "${livro.titulo}" cadastrado com sucesso!`)
+  } catch {
+    console.log('Erro ao cadastrar livro')
+    return
   }
 }
 

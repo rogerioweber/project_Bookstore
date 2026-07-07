@@ -1,4 +1,15 @@
 -- =====================================================================
+-- EXTENSÕES E FUNÇÕES AUXILIARES
+-- =====================================================================CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+CREATE OR REPLACE FUNCTION imutavel_unaccent(texto TEXT)
+RETURNS TEXT AS $$
+  SELECT public.unaccent(texto);
+$$ LANGUAGE sql IMMUTABLE PARALLEL SAFE
+SET search_path = public;
+
+-- =====================================================================
 -- TABELA: autor
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS autor (
@@ -7,7 +18,7 @@ CREATE TABLE IF NOT EXISTS autor (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_autor_nome_unico
-ON autor (LOWER(nome));
+ON autor (LOWER(imutavel_unaccent(nome)));
 
 -- =====================================================================
 -- TABELA: categoria
@@ -18,7 +29,7 @@ CREATE TABLE IF NOT EXISTS categoria (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_categoria_nome_unico
-ON categoria (LOWER(nome));
+ON categoria (LOWER(imutavel_unaccent(nome)));
 
 -- =====================================================================
 -- TABELA: livro
@@ -32,12 +43,13 @@ CREATE TABLE IF NOT EXISTS livro (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_livro_titulo_unico
-ON livro (LOWER(titulo));
+ON livro (LOWER(imutavel_unaccent(titulo)));
 
 -- =====================================================================
 -- TABELA: livro_autor
 -- Relação N:N entre livro e autor (um livro pode ter vários autores
 -- e um autor pode ter escrito vários livros)
+-- Depende de: livro, autor
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS livro_autor (
     livro_id    INTEGER NOT NULL REFERENCES livro(id)
@@ -56,6 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_livro_autor_autor_id ON livro_autor(autor_id);
 -- TABELA: categoria_livro
 -- Relação N:N entre livro e categoria (um livro pode ter várias
 -- categorias e uma categoria pode estar em vários livros)
+-- Depende de: livro, categoria
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS categoria_livro (
     livro_id      INTEGER NOT NULL REFERENCES livro(id)
@@ -78,9 +91,12 @@ CREATE TABLE IF NOT EXISTS funcionario (
     id          SERIAL PRIMARY KEY,
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
-    email       VARCHAR(150) UNIQUE NOT NULL,
+    email       VARCHAR(150) NOT NULL,
     senha       VARCHAR(255) NOT NULL  -- armazenar sempre com hash (ex.: bcrypt), nunca em texto puro
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_funcionario_email_unico
+ON funcionario (LOWER(email));
 
 -- =====================================================================
 -- TABELA: cliente
@@ -91,14 +107,18 @@ CREATE TABLE IF NOT EXISTS cliente (
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
     cpf         VARCHAR(11) UNIQUE NOT NULL,
-    email       VARCHAR(150) UNIQUE NOT NULL,
+    email       VARCHAR(150) NOT NULL,
     telefone    VARCHAR(20) NOT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cliente_email_unico
+ON cliente (LOWER(email));
 
 -- =====================================================================
 -- TABELA: reserva_acervo
 -- Registro de que um exemplar de um livro foi reservado por um
--- usuário, com o funcionário responsável pelo registro
+-- cliente, com o funcionário responsável pelo registro
+-- Depende de: livro, funcionario, cliente
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS reserva_acervo (
     id                          SERIAL PRIMARY KEY,
@@ -115,7 +135,7 @@ CREATE TABLE IF NOT EXISTS reserva_acervo (
                                     ON DELETE RESTRICT
                                     ON UPDATE CASCADE,
     data_reserva                DATE NOT NULL DEFAULT CURRENT_DATE,
-    data_devolucao               DATE,
+    data_devolucao              DATE,
     status                      VARCHAR(20) NOT NULL DEFAULT 'ativa'
                                     CHECK (status IN ('ativa', 'devolvida', 'atrasada')),
 
