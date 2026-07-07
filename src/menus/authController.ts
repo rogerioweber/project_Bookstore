@@ -1,7 +1,7 @@
 import inquirer from 'inquirer'
 
-import { cadastroFuncionarioController } from './cadastroFuncionarioController'
-import { loginFuncionarioController } from './loginFuncionarioController'
+import { cadastroFuncionarioController } from '../controllers/cadastroFuncionarioController'
+import { loginFuncionarioController } from '../controllers/loginFuncionarioController'
 import { Funcionario } from '../models/Funcionario'
 
 interface AuthMenuPrompt {

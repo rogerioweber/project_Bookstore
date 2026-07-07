@@ -1,11 +1,11 @@
 // src/controllers/adminMenuController.ts
 import inquirer from 'inquirer'
 
-import { cadastroClienteController } from './cadastroClienteController'
-import { cadastroLivroController } from './cadastroLivroController'
-import { consultarClienteController } from './consultarClienteController'
-import { consultarLivroController } from './consultarLivroController'
-import { emprestimoMenuController } from './emprestimoController'
+import { cadastroClienteController } from '../controllers/cadastroClienteController'
+import { cadastroLivroController } from '../controllers/cadastroLivroController'
+import { consultarClienteController } from '../controllers/consultarClienteController'
+import { consultarLivroController } from '../controllers/consultarLivroController'
+import { emprestimoMenuController } from '../controllers/emprestimoController'
 import { Funcionario } from '../models/Funcionario'
 
 interface AdminMenuPrompt {
