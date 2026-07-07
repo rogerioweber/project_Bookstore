@@ -97,6 +97,34 @@ async function listarPorTituloParcial(
   return result.rows
 }
 
+async function listarPorTituloOuAutor(termo: string): Promise<LivroListagem[]> {
+  const result = await pool.query<LivroListagem>(
+    `SELECT
+       l.id,
+       l.titulo,
+       l.total_exemplares,
+       l.status,
+       STRING_AGG(DISTINCT a.nome, ', ' ORDER BY a.nome) AS autores,
+       STRING_AGG(DISTINCT c.nome, ', ' ORDER BY c.nome) AS categorias
+     FROM livro l
+     LEFT JOIN livro_autor la ON la.livro_id = l.id
+     LEFT JOIN autor a ON a.id = la.autor_id
+     LEFT JOIN categoria_livro cl ON cl.livro_id = l.id
+     LEFT JOIN categoria c ON c.id = cl.categoria_id
+     WHERE l.id IN (
+       SELECT l2.id FROM livro l2
+       LEFT JOIN livro_autor la2 ON la2.livro_id = l2.id
+       LEFT JOIN autor a2 ON a2.id = la2.autor_id
+       WHERE l2.titulo ILIKE $1 OR a2.nome ILIKE $1
+     )
+     GROUP BY l.id
+     ORDER BY l.titulo`,
+    [`%${termo}%`]
+  )
+
+  return result.rows
+}
+
 async function listarPorCategorias(
   nomesCategorias: string[]
 ): Promise<LivroListagem[]> {
@@ -165,6 +193,20 @@ async function buscarPorTitulo(titulo: string): Promise<Livro | null> {
     [titulo]
   )
   return result.rows[0] ?? null
+}
+
+async function buscarPorId(id: number): Promise<Livro | null> {
+  const result = await pool.query<Livro>('SELECT * FROM livro WHERE id = $1', [
+    id
+  ])
+  return result.rows[0] ?? null
+}
+
+async function atualizarStatus(
+  id: number,
+  status: Livro['status']
+): Promise<void> {
+  await pool.query('UPDATE livro SET status = $1 WHERE id = $2', [status, id])
 }
 
 async function criar(dados: CriarLivroInput): Promise<Livro> {
@@ -255,9 +297,12 @@ export {
   listarTodos,
   listarPorAutor,
   listarPorTituloParcial,
+  listarPorTituloOuAutor,
   listarPorCategorias,
   buscarDetalhadoPorId,
   buscarPorTitulo,
+  buscarPorId,
+  atualizarStatus,
   criar,
   atualizar,
   deletar

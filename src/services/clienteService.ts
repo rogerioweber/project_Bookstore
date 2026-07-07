@@ -1,4 +1,4 @@
-import { Cliente } from '../models/Cliente'
+import { Cliente, AtualizarClienteInput } from '../models/Cliente'
 import * as clienteRepository from '../repositories/clienteRepository'
 
 function validarCpf(cpf: string): string {
@@ -9,16 +9,24 @@ function validarCpf(cpf: string): string {
   return digitos
 }
 
+function validarEmail(email: string): string {
+  const emailTrimado = email.trim()
+  if (!emailTrimado.includes('@')) throw new Error('Email inválido.')
+  return emailTrimado
+}
 async function cadastrarCliente(
   nome: string,
   sobrenome: string,
   cpf: string,
-  email: string | null
+  email: string,
+  telefone: string
 ): Promise<Cliente> {
   const cpfLimpo = validarCpf(cpf)
+  const emailValido = validarEmail(email)
 
   if (!nome.trim()) throw new Error('O nome é obrigatório')
   if (!sobrenome.trim()) throw new Error('O sobrenome é obrigatório')
+  if (!telefone.trim()) throw new Error('O telefone é obrigatório')
 
   const existente = await clienteRepository.buscarPorCpf(cpfLimpo)
   if (existente) {
@@ -27,7 +35,13 @@ async function cadastrarCliente(
     )
   }
 
-  return clienteRepository.criar(nome.trim(), sobrenome.trim(), cpfLimpo, email)
+  return clienteRepository.criar(
+    nome.trim(),
+    sobrenome.trim(),
+    cpfLimpo,
+    emailValido,
+    telefone.trim()
+  )
 }
 
 async function buscarClientePorCpf(cpf: string): Promise<Cliente | null> {
@@ -35,8 +49,30 @@ async function buscarClientePorCpf(cpf: string): Promise<Cliente | null> {
   return clienteRepository.buscarPorCpf(cpfLimpo)
 }
 
-async function listarClientes(): Promise<Cliente[]> {
-  return clienteRepository.listarTodos()
+async function buscarClientesPorNome(nome: string): Promise<Cliente[]> {
+  return clienteRepository.buscarPorNomeParcial(nome)
 }
 
-export { cadastrarCliente, buscarClientePorCpf, listarClientes }
+async function atualizarCliente(
+  id: number,
+  dados: AtualizarClienteInput
+): Promise<Cliente> {
+  if (!dados.nome.trim()) throw new Error('O nome é obrigatório')
+  if (!dados.sobrenome.trim()) throw new Error('O sobrenome é obrigatório')
+  const emailValido = validarEmail(dados.email)
+  if (!dados.telefone.trim()) throw new Error('O telefone é obrigatório')
+
+  return clienteRepository.atualizar(id, { ...dados, email: emailValido })
+}
+
+async function removerCliente(id: number): Promise<boolean> {
+  return clienteRepository.deletar(id)
+}
+
+export {
+  cadastrarCliente,
+  buscarClientePorCpf,
+  buscarClientesPorNome,
+  atualizarCliente,
+  removerCliente
+}

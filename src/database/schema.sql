@@ -83,15 +83,16 @@ CREATE TABLE IF NOT EXISTS funcionario (
 );
 
 -- =====================================================================
--- TABELA: usuario
+-- TABELA: cliente
 -- Cliente da livraria que solicita reservas
 -- =====================================================================
-CREATE TABLE IF NOT EXISTS usuario (
+CREATE TABLE IF NOT EXISTS cliente (
     id          SERIAL PRIMARY KEY,
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
-    cpf         VARCHAR(14) UNIQUE NOT NULL,
-    email       VARCHAR(150) UNIQUE
+    cpf         VARCHAR(11) UNIQUE NOT NULL,
+    email       VARCHAR(150) UNIQUE NOT NULL,
+    telefone    VARCHAR(20) NOT NULL
 );
 
 -- =====================================================================
@@ -110,7 +111,7 @@ CREATE TABLE IF NOT EXISTS reserva_acervo (
     funcionario_devolucao_id    INTEGER REFERENCES funcionario(id)
                                     ON DELETE RESTRICT
                                     ON UPDATE CASCADE,
-    usuario_id                  INTEGER NOT NULL REFERENCES usuario(id)
+    cliente_id                  INTEGER NOT NULL REFERENCES cliente(id)
                                     ON DELETE RESTRICT
                                     ON UPDATE CASCADE,
     data_reserva                DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -124,5 +125,5 @@ CREATE TABLE IF NOT EXISTS reserva_acervo (
 
 CREATE INDEX IF NOT EXISTS idx_reserva_livro_id ON reserva_acervo(livro_id);
 CREATE INDEX IF NOT EXISTS idx_reserva_funcionario_id ON reserva_acervo(funcionario_id);
-CREATE INDEX IF NOT EXISTS idx_reserva_usuario_id ON reserva_acervo(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_reserva_cliente_id ON reserva_acervo(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_reserva_status ON reserva_acervo(status);
