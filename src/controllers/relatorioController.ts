@@ -1,5 +1,3 @@
-import inquirer from 'inquirer'
-
 import { listarAutoresComQuantidadeLivros } from '../services/autorService'
 import {
   listarLivrosPorStatus,
@@ -10,32 +8,18 @@ import {
   listarClientesComEmprestimoAtivo,
   listarHistoricoPorLivro
 } from '../services/reservaService'
+import { selecionarOpcao, pedirTexto, selecionarItem } from '../utils/prompts'
 
 async function relatorioMenuController(): Promise<void> {
   for (;;) {
-    const { opcao } = await inquirer.prompt<{
-      opcao:
-        | 'Livros disponíveis'
-        | 'Livros emprestados'
-        | 'Livros cadastrados por autor'
-        | 'Quantidade de empréstimos por livro'
-        | 'Clientes com empréstimo ativo'
-        | 'Voltar'
-    }>([
-      {
-        type: 'select',
-        name: 'opcao',
-        message: 'Relatórios',
-        choices: [
-          'Livros disponíveis',
-          'Livros emprestados',
-          'Livros cadastrados por autor',
-          'Quantidade de empréstimos por livro',
-          'Clientes com empréstimo ativo',
-          'Voltar'
-        ]
-      }
-    ])
+    const opcao = await selecionarOpcao('Relatórios', [
+      'Livros disponíveis',
+      'Livros emprestados',
+      'Livros cadastrados por autor',
+      'Quantidade de empréstimos por livro',
+      'Clientes com empréstimo ativo',
+      'Voltar'
+    ] as const)
 
     if (opcao === 'Voltar') break
 
@@ -100,13 +84,7 @@ async function relatorioLivrosPorAutor(): Promise<void> {
 }
 
 async function relatorioHistoricoPorLivro(): Promise<void> {
-  const { termo } = await inquirer.prompt<{ termo: string }>([
-    {
-      type: 'input',
-      name: 'termo',
-      message: 'Digite parte do título ou do nome do autor:'
-    }
-  ])
+  const termo = await pedirTexto('Digite parte do título ou do nome do autor:')
 
   if (!termo.trim()) {
     console.log('Digite ao menos um caractere para buscar.')
@@ -120,24 +98,15 @@ async function relatorioHistoricoPorLivro(): Promise<void> {
     return
   }
 
-  const { livroId } = await inquirer.prompt<{ livroId: number | 'voltar' }>([
-    {
-      type: 'select',
-      name: 'livroId',
-      message: 'Selecione o livro:',
-      choices: [
-        ...livros.map((l) => ({
-          name: `${l.titulo} — ${l.autores ?? 'sem autor'}`,
-          value: l.id
-        })),
-        { name: 'Voltar', value: 'voltar' as const }
-      ]
-    }
-  ])
+  const livro = await selecionarItem(
+    'Selecione o livro:',
+    livros,
+    (l) => `${l.titulo} — ${l.autores ?? 'sem autor'}`
+  )
 
-  if (livroId === 'voltar') return
+  if (!livro) return
 
-  const historico = await listarHistoricoPorLivro(livroId)
+  const historico = await listarHistoricoPorLivro(livro.id)
 
   if (historico.length === 0) {
     console.log('Nenhum histórico de empréstimo para esse livro.')
@@ -150,7 +119,7 @@ async function relatorioHistoricoPorLivro(): Promise<void> {
       ? `devolvido em ${r.data_devolucao} (por ${r.funcionario_devolveu_nome ?? '—'})`
       : 'ainda não devolvido'
     console.log(
-      `Cliente: ${r.cliente_nome} — emprestado em ${r.data_reserva} ( por ${r.funcionario_emprestou_nome}) | ${devolucao}`
+      `Cliente: ${r.cliente_nome} — emprestado em ${r.data_reserva} (por ${r.funcionario_emprestou_nome}) | ${devolucao}`
     )
   }
   console.log('-------------------------------------\n')

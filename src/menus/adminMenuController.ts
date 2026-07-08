@@ -1,78 +1,63 @@
-// src/controllers/adminMenuController.ts
-import inquirer from 'inquirer'
-
 import { autorController } from '../controllers/autorController'
-import { cadastroClienteController } from '../controllers/cadastroClienteController'
-import { cadastroLivroController } from '../controllers/cadastroLivroController'
-import { consultarClienteController } from '../controllers/consultarClienteController'
-import { consultarLivroController } from '../controllers/consultarLivroController'
+import { clienteCadastrarController } from '../controllers/clienteCadastrarController'
+import { clienteConsultarController } from '../controllers/clienteConsultarController'
 import { emprestimoMenuController } from '../controllers/emprestimoController'
+import { livroCadastroController } from '../controllers/livroCadastroController'
+import { livroConsultarController } from '../controllers/livroConsultarController'
 import { relatorioMenuController } from '../controllers/relatorioController'
 import { Funcionario } from '../models/Funcionario'
-
-interface AdminMenuPrompt {
-  opcao:
-    | 'Gerenciar autores'
-    | 'Cadastrar livro'
-    | 'Consultar livros'
-    | 'Cadastrar cliente'
-    | 'Consultar clientes'
-    | 'Gerenciar empréstimos'
-    | 'Relatórios'
-    | 'Sair'
-}
+import { selecionarOpcao } from '../utils/prompts'
 
 async function adminMenuController(funcionario: Funcionario): Promise<void> {
-  let continuar = true
+  for (;;) {
+    const opcao = await selecionarOpcao(
+      `Menu Administrador (${funcionario.nome})`,
+      [
+        'Gerenciar autores',
+        'Gerenciar livros',
+        'Gerenciar clientes',
+        'Gerenciar empréstimos',
+        'Relatórios',
+        'Sair'
+      ] as const
+    )
 
-  while (continuar) {
-    const { opcao } = await inquirer.prompt<AdminMenuPrompt>([
-      {
-        type: 'select',
-        name: 'opcao',
-        message: `Menu Administrador (${funcionario.nome})`,
-        choices: [
-          'Gerenciar autores',
-          'Cadastrar livro',
-          'Consultar livros',
-          'Cadastrar cliente',
-          'Consultar clientes',
-          'Gerenciar empréstimos',
-          'Relatórios',
-          'Sair'
-        ],
-        loop: false
-      }
-    ])
+    if (opcao === 'Sair') break
 
-    switch (opcao) {
-      case 'Gerenciar autores':
-        await autorController()
-        break
-      case 'Cadastrar livro':
-        await cadastroLivroController()
-        break
-      case 'Consultar livros':
-        await consultarLivroController()
-        break
-      case 'Cadastrar cliente':
-        await cadastroClienteController()
-        break
-      case 'Consultar clientes':
-        await consultarClienteController()
-        break
-      case 'Gerenciar empréstimos':
-        await emprestimoMenuController(funcionario)
-        break
-      case 'Relatórios':
-        await relatorioMenuController()
-        break
-      case 'Sair':
-        continuar = false
-        break
-      default:
-        console.log('Erro no sistema')
-    }
+    if (opcao === 'Gerenciar autores') await autorController()
+    if (opcao === 'Gerenciar livros') await gerenciarLivrosMenu()
+    if (opcao === 'Gerenciar clientes') await gerenciarClientesMenu()
+    if (opcao === 'Gerenciar empréstimos')
+      await emprestimoMenuController(funcionario)
+    if (opcao === 'Relatórios') await relatorioMenuController()
+  }
+}
+
+async function gerenciarLivrosMenu(): Promise<void> {
+  for (;;) {
+    const opcao = await selecionarOpcao('Gerenciar livros', [
+      'Cadastrar livro',
+      'Consultar livros',
+      'Voltar'
+    ] as const)
+
+    if (opcao === 'Voltar') break
+    if (opcao === 'Cadastrar livro') await livroCadastroController()
+    if (opcao === 'Consultar livros') await livroConsultarController()
+  }
+}
+
+async function gerenciarClientesMenu(): Promise<void> {
+  for (;;) {
+    const opcao = await selecionarOpcao('Gerenciar clientes', [
+      'Cadastrar cliente',
+      'Consultar clientes',
+      'Voltar'
+    ] as const)
+
+    if (opcao === 'Voltar') break
+    if (opcao === 'Cadastrar cliente') await clienteCadastrarController()
+    if (opcao === 'Consultar clientes') await clienteConsultarController()
   }
 }
 

@@ -1,6 +1,6 @@
 import inquirer from 'inquirer'
 
-import { detalheLivroController } from './detalheLivroController'
+import { livroDetalheController } from './livroDetalheController'
 import { LivroListagem, OrdenarLivrosPor } from '../models/Livro'
 import { listarCategorias } from '../services/categoriaService'
 import {
@@ -19,7 +19,7 @@ interface ConsultarLivroMenuPrompt {
     | 'Voltar'
 }
 
-async function consultarLivroController(): Promise<void> {
+async function livroConsultarController(): Promise<void> {
   for (;;) {
     const { opcao } = await inquirer.prompt<ConsultarLivroMenuPrompt>([
       {
@@ -152,7 +152,7 @@ async function exibirListaEDetalhe(livros: LivroListagem[]): Promise<void> {
 
   if (livroId === 'voltar') return
 
-  await detalheLivroController(livroId)
+  await livroDetalheController(livroId)
 }
 
-export { consultarLivroController }
+export { livroConsultarController }

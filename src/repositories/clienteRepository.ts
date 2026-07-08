@@ -1,4 +1,4 @@
-import { pool } from '../database/connection'
+import { pool } from '../infra/database/connection'
 import { AtualizarClienteInput, Cliente } from '../models/Cliente'
 
 async function buscarPorCpf(cpf: string): Promise<Cliente | null> {

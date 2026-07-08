@@ -10,6 +10,8 @@ async function emprestarLivro(
   clienteId: number,
   prazoDias: number
 ): Promise<void> {
+  await reservaRepository.atualizarStatusAtrasados()
+
   const possuiEmprestimoAtivo =
     await reservaRepository.existeReservaAtivaPorCliente(clienteId)
   if (possuiEmprestimoAtivo) {
@@ -46,7 +48,7 @@ async function devolverLivro(
 ): Promise<void> {
   const reserva = await reservaRepository.buscarPorId(reservaId)
   if (!reserva) throw new Error('Reserva não encontrada')
-  if (reserva.status !== 'ativa')
+  if (reserva.status === 'devolvida')
     throw new Error('Essa reserva já foi encerrada')
 
   await reservaRepository.registrarDevolucao(reservaId, funcionarioDevolucaoId)
@@ -80,6 +82,7 @@ async function listarLivrosComEmprestimoAtivo() {
 }
 
 async function listarClientesComEmprestimoAtivo() {
+  await reservaRepository.atualizarStatusAtrasados()
   return reservaRepository.listarClientesComEmprestimoAtivo()
 }
 

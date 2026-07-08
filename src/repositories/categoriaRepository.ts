@@ -1,5 +1,4 @@
-// src/repositories/CategoriaRepository.ts
-import { pool } from '../database/connection'
+import { pool } from '../infra/database/connection'
 import { Categoria } from '../models/Categoria'
 
 async function buscarPorNome(nome: string): Promise<Categoria | null> {
