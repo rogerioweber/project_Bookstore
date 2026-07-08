@@ -70,10 +70,13 @@ async function removerLivroFluxo(
     return
   }
 
-  await removerLivro(livroId)
-  console.log('Livro removido com sucesso.')
+  try {
+    await removerLivro(livroId)
+    console.log('Livro removido com sucesso.')
+  } catch (error) {
+    console.log((error as Error).message)
+  }
 }
-
 async function atualizarLivroFluxo(livroId: number): Promise<void> {
   const livro = await buscarLivroDetalhado(livroId)
   if (!livro) return

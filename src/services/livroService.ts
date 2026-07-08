@@ -42,9 +42,24 @@ async function cadastrarLivro(
   if (nomesCategorias.length === 0)
     throw new Error('Informe ao menos uma categoria')
 
-  const existente = await livroRepository.buscarPorTitulo(tituloNormalizado)
-  if (existente) {
-    throw new Error(`Já existe um livro com o título "${existente.titulo}"`)
+  const autoresNormalizados = nomesAutores
+    .map((nome) => capitalizar(nome))
+    .sort()
+
+  const candidatos =
+    await livroRepository.buscarPorTituloComAutores(tituloNormalizado)
+
+  const duplicado = candidatos.find((candidato) => {
+    const autoresExistentes = [...candidato.autores].sort()
+    return (
+      JSON.stringify(autoresExistentes) === JSON.stringify(autoresNormalizados)
+    )
+  })
+
+  if (duplicado) {
+    throw new Error(
+      `Já existe um livro "${duplicado.livro.titulo}" cadastrado com o(s) mesmo(s) autor(es)`
+    )
   }
 
   const autorIds: number[] = []
@@ -122,7 +137,17 @@ async function recalcularStatusLivro(livroId: number): Promise<void> {
 }
 
 async function removerLivro(id: number): Promise<boolean> {
-  return livroRepository.deletar(id)
+  try {
+    return await livroRepository.deletar(id)
+  } catch (error) {
+    const pgError = error as { code?: string }
+    if (pgError.code === '23001' || pgError.code === '23503') {
+      throw new Error(
+        'Não é possível remover este livro: ele possui histórico de empréstimos registrado.'
+      )
+    }
+    throw error
+  }
 }
 
 async function listarLivrosPorStatus(

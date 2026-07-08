@@ -19,7 +19,7 @@ async function buscarPorId(id: number): Promise<Cliente | null> {
 
 async function listarTodos(): Promise<Cliente[]> {
   const result = await pool.query<Cliente>(
-    'SELECT * FROM cliente ORDER BY nome'
+    'SELECT * FROM cliente ORDER BY nome, sobrenome'
   )
   return result.rows
 }

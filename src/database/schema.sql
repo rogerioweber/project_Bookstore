@@ -42,9 +42,6 @@ CREATE TABLE IF NOT EXISTS livro (
                             CHECK (status IN ('disponivel', 'indisponivel'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_livro_titulo_unico
-ON livro (LOWER(imutavel_unaccent(titulo)));
-
 -- =====================================================================
 -- TABELA: livro_autor
 -- Relação N:N entre livro e autor (um livro pode ter vários autores
@@ -91,12 +88,12 @@ CREATE TABLE IF NOT EXISTS funcionario (
     id          SERIAL PRIMARY KEY,
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
-    email       VARCHAR(150) NOT NULL,
-    senha       VARCHAR(255) NOT NULL  -- armazenar sempre com hash (ex.: bcrypt), nunca em texto puro
+    usuario       VARCHAR(25) NOT NULL,
+    senha       VARCHAR(100) NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_funcionario_email_unico
-ON funcionario (LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_funcionario_usuario_unico
+ON funcionario (LOWER(usuario));
 
 -- =====================================================================
 -- TABELA: cliente
@@ -107,7 +104,7 @@ CREATE TABLE IF NOT EXISTS cliente (
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
     cpf         VARCHAR(11) UNIQUE NOT NULL,
-    email       VARCHAR(150) NOT NULL,
+    email       VARCHAR(150) UNIQUE NOT NULL,
     telefone    VARCHAR(20) NOT NULL
 );
 

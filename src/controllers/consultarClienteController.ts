@@ -1,74 +1,95 @@
 import inquirer from 'inquirer'
 
-import { Cliente } from '../models/Cliente'
+import { Cliente, ConsultarClienteMenuPrompt } from '../models/Cliente'
 import {
   buscarClientePorCpf,
   buscarClientesPorNome,
   atualizarCliente,
-  removerCliente
+  removerCliente,
+  listarClientes
 } from '../services/clienteService'
 import { listarHistoricoPorCliente } from '../services/reservaService'
 
 async function consultarClienteController(): Promise<void> {
-  const { opcao } = await inquirer.prompt<{
-    opcao: 'Buscar por nome' | 'Buscar por CPF' | 'Voltar'
-  }>([
-    {
-      type: 'select',
-      name: 'opcao',
-      message: 'Consultar clientes',
-      choices: ['Buscar por nome', 'Buscar por CPF', 'Voltar']
-    }
-  ])
-
-  if (opcao === 'Voltar') return
-
-  let cliente: Cliente | null = null
-
-  if (opcao === 'Buscar por CPF') {
-    const { cpf } = await inquirer.prompt<{ cpf: string }>([
-      { type: 'input', name: 'cpf', message: 'CPF do cliente:' }
-    ])
-    cliente = await buscarClientePorCpf(cpf)
-
-    if (!cliente) {
-      console.log('Cliente não encontrado.')
-      return
-    }
-  } else {
-    const { nome } = await inquirer.prompt<{ nome: string }>([
-      { type: 'input', name: 'nome', message: 'Nome (ou parte dele):' }
-    ])
-    const encontrados = await buscarClientesPorNome(nome)
-
-    if (encontrados.length === 0) {
-      console.log('Nenhum cliente encontrado.')
-      return
-    }
-
-    const { clienteId } = await inquirer.prompt<{
-      clienteId: number | 'voltar'
-    }>([
+  for (;;) {
+    const { opcao } = await inquirer.prompt<ConsultarClienteMenuPrompt>([
       {
         type: 'select',
-        name: 'clienteId',
-        message: 'Selecione o cliente:',
+        name: 'opcao',
+        message: 'Consultar clientes',
         choices: [
-          ...encontrados.map((c) => ({
-            name: `${c.nome} ${c.sobrenome} — CPF ${c.cpf}`,
-            value: c.id
-          })),
-          { name: 'Voltar', value: 'voltar' as const }
-        ]
+          'Listar todos os clientes',
+          'Buscar por nome',
+          'Buscar por CPF',
+          'Voltar'
+        ],
+        loop: false
       }
     ])
 
-    if (clienteId === 'voltar') {
-      return
-    }
-    cliente = encontrados.find((c) => c.id === clienteId) ?? null
+    if (opcao === 'Voltar') break
+
+    if (opcao === 'Listar todos os clientes') await listarTodosFluxo()
+    if (opcao === 'Buscar por nome') await buscarPorNomeFluxo()
+    if (opcao === 'Buscar por CPF') await buscarPorCpfFluxo()
+  }
+}
+
+async function listarTodosFluxo(): Promise<void> {
+  const clientes = await listarClientes()
+  await exibirClientes(clientes)
+}
+
+async function buscarPorNomeFluxo(): Promise<void> {
+  const { nome } = await inquirer.prompt<{ nome: string }>([
+    { type: 'input', name: 'nome', message: 'Digite o nome ou parte dele:' }
+  ])
+
+  if (!nome.trim()) {
+    console.log('Digite ao menos um caractere para buscar.')
+    return
   }
 
+  const clientes = await buscarClientesPorNome(nome.trim())
+  await exibirClientes(clientes)
+}
+
+async function buscarPorCpfFluxo(): Promise<void> {
+  const { cpf } = await inquirer.prompt<{ cpf: string }>([
+    { type: 'input', name: 'cpf', message: 'Digite o CPF (somente números):' }
+  ])
+
+  const cliente = await buscarClientePorCpf(cpf)
+  await exibirClientes(cliente ? [cliente] : [])
+}
+
+async function exibirClientes(clientes: Cliente[]): Promise<void> {
+  if (clientes.length === 0) {
+    console.log('Nenhum cliente encontrado.')
+    return
+  }
+
+  const { clienteId } = await inquirer.prompt<{ clienteId: number | 'voltar' }>(
+    [
+      {
+        type: 'select',
+        name: 'clienteId',
+        message: 'Selecione um cliente:',
+        choices: [
+          ...clientes.map((c) => ({
+            name: `${c.nome} ${c.sobrenome} — CPF: ${c.cpf}`,
+            value: c.id
+          })),
+          { name: 'Voltar', value: 'voltar' as const }
+        ],
+        loop: false
+      }
+    ]
+  )
+
+  if (clienteId === 'voltar') return
+
+  const cliente = clientes.find((c) => c.id === clienteId)
   if (!cliente) return
 
   await exibirDetalheCliente(cliente)
@@ -149,8 +170,8 @@ async function atualizarClienteFluxo(cliente: Cliente): Promise<void> {
   try {
     await atualizarCliente(cliente.id, resposta)
     console.log('Cliente atualizado com sucesso!')
-  } catch (error) {
-    console.log((error as Error).message)
+  } catch {
+    console.log('Erro ao atualizar cliente')
   }
 }
 
@@ -172,11 +193,11 @@ async function removerClienteFluxo(cliente: Cliente): Promise<void> {
   try {
     await removerCliente(cliente.id)
     console.log('Cliente removido com sucesso.')
-  } catch (error) {
+  } catch {
     console.log(
-      'Não foi possível remover: esse cliente possui empréstimos registrados no histórico.',
-      error
+      'Não foi possível remover: esse cliente possui empréstimos registrados no histórico.'
     )
+    return
   }
 }
 

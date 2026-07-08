@@ -34,6 +34,7 @@ async function cadastroClienteController(): Promise<void> {
     )
   } catch (error) {
     console.log((error as Error).message)
+    return
   }
 }
 

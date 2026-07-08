@@ -6,22 +6,22 @@ export class FuncionarioRepository {
   async criar(
     nome: string,
     sobrenome: string,
-    email: string,
+    usuario: string,
     senhaHash: string
   ): Promise<Funcionario> {
     const result = await pool.query<Funcionario>(
-      `INSERT INTO funcionario (nome, sobrenome, email, senha)
+      `INSERT INTO funcionario (nome, sobrenome, usuario, senha)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, nome, sobrenome, email, senha`,
-      [nome, sobrenome, email, senhaHash]
+       RETURNING id, nome, sobrenome, usuario, senha`,
+      [nome, sobrenome, usuario, senhaHash]
     )
     return result.rows[0]
   }
 
-  async buscarPorEmail(email: string): Promise<Funcionario | null> {
+  async buscarPorUsuario(usuario: string): Promise<Funcionario | null> {
     const result = await pool.query<Funcionario>(
-      `SELECT * FROM funcionario WHERE email = $1`,
-      [email]
+      `SELECT * FROM funcionario WHERE usuario = $1`,
+      [usuario]
     )
     return result.rows[0] ?? null
   }

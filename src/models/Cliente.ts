@@ -24,3 +24,8 @@ export interface ClienteComEmprestimoAtivo {
   data_prevista_devolucao: string
   status: string
 }
+
+export interface ConsultarClienteMenuPrompt {
+  opcao:
+    'Listar todos os clientes' | 'Buscar por nome' | 'Buscar por CPF' | 'Voltar'
+}

@@ -4,8 +4,7 @@ import { Cliente } from '../models/Cliente'
 import { Funcionario } from '../models/Funcionario'
 import {
   buscarClientePorCpf,
-  buscarClientesPorNome,
-  cadastrarCliente
+  buscarClientesPorNome
 } from '../services/clienteService'
 import {
   buscarLivroPorId,
@@ -39,6 +38,7 @@ async function emprestimoMenuController(
       if (opcao === 'Devolver livro') await devolverFluxo(funcionario)
     } catch (error) {
       console.log((error as Error).message)
+      return
     }
   }
 }
@@ -76,7 +76,8 @@ async function selecionarLivroFluxo(): Promise<number | null> {
           value: l.id
         })),
         { name: 'Voltar', value: 'voltar' as const }
-      ]
+      ],
+      loop: false
     }
   ])
 
@@ -126,7 +127,8 @@ async function selecionarClienteFluxo(): Promise<Cliente | null> {
               value: c.id
             })),
             { name: 'Nenhum destes', value: 'voltar' as const }
-          ]
+          ],
+          loop: false
         }
       ])
 
@@ -148,50 +150,10 @@ async function selecionarClienteFluxo(): Promise<Cliente | null> {
     return confirmar ? cliente : null
   }
 
-  console.log('Cliente não encontrado.')
-  const { opcao } = await inquirer.prompt<{
-    opcao: 'Cadastrar novo cliente' | 'Voltar'
-  }>([
-    {
-      type: 'select',
-      name: 'opcao',
-      message: 'O que deseja fazer?',
-      choices: ['Cadastrar novo cliente', 'Voltar']
-    }
-  ])
-
-  if (opcao === 'Voltar') return null
-
-  return cadastrarNovoClienteFluxo()
-}
-
-async function cadastrarNovoClienteFluxo(): Promise<Cliente | null> {
-  const dados = await inquirer.prompt<{
-    nome: string
-    sobrenome: string
-    cpf: string
-    email: string
-    telefone: string
-  }>([
-    { type: 'input', name: 'nome', message: 'Nome:' },
-    { type: 'input', name: 'sobrenome', message: 'Sobrenome:' },
-    { type: 'input', name: 'cpf', message: 'CPF:' },
-    { type: 'input', name: 'email', message: 'Email:' },
-    { type: 'input', name: 'telefone', message: 'Telefone:' }
-  ])
-
-  try {
-    return await cadastrarCliente(
-      dados.nome,
-      dados.sobrenome,
-      dados.cpf,
-      dados.email,
-      dados.telefone
-    )
-  } catch (error) {
-    console.log((error as Error).message)
-    return null
-  }
+  console.log(
+    'Cliente não encontrado. É necessário cadastrá-lo antes de realizar o empréstimo'
+  )
+  return null
 }
 
 // ----- Fluxos principais -----
@@ -254,16 +216,7 @@ async function devolverFluxo(funcionario: Funcionario): Promise<void> {
     }
   ])
 
-  const { dataDevolucao } = await inquirer.prompt<{ dataDevolucao: string }>([
-    {
-      type: 'input',
-      name: 'dataDevolucao',
-      message: 'Data da devolução (AAAA-MM-DD):',
-      default: new Date().toISOString().slice(0, 10)
-    }
-  ])
-
-  await devolverLivro(reservaId, funcionario.id, dataDevolucao)
+  await devolverLivro(reservaId, funcionario.id)
   console.log('Devolução registrada com sucesso!')
 }
 
