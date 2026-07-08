@@ -1,6 +1,7 @@
 // src/controllers/adminMenuController.ts
 import inquirer from 'inquirer'
 
+import { autorController } from '../controllers/autorController'
 import { cadastroClienteController } from '../controllers/cadastroClienteController'
 import { cadastroLivroController } from '../controllers/cadastroLivroController'
 import { consultarClienteController } from '../controllers/consultarClienteController'
@@ -11,6 +12,7 @@ import { Funcionario } from '../models/Funcionario'
 
 interface AdminMenuPrompt {
   opcao:
+    | 'Gerenciar autores'
     | 'Cadastrar livro'
     | 'Consultar livros'
     | 'Cadastrar cliente'
@@ -30,6 +32,7 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
         name: 'opcao',
         message: `Menu Administrador (${funcionario.nome})`,
         choices: [
+          'Gerenciar autores',
           'Cadastrar livro',
           'Consultar livros',
           'Cadastrar cliente',
@@ -37,11 +40,15 @@ async function adminMenuController(funcionario: Funcionario): Promise<void> {
           'Gerenciar empréstimos',
           'Relatórios',
           'Sair'
-        ]
+        ],
+        loop: false
       }
     ])
 
     switch (opcao) {
+      case 'Gerenciar autores':
+        await autorController()
+        break
       case 'Cadastrar livro':
         await cadastroLivroController()
         break

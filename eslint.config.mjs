@@ -6,7 +6,12 @@ import tseslint from 'typescript-eslint'
 
 const config = defineConfig(
   {
-    ignores: ['dist/**', 'node_modules/**', 'src/_experiments/**']
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'src/_experiments/**',
+      'eslint.config.mjs'
+    ]
   },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,

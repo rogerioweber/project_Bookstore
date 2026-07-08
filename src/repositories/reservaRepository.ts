@@ -113,14 +113,13 @@ async function listarHistoricoPorCliente(
 
 async function registrarDevolucao(
   reservaId: number,
-  funcionarioDevolucaoId: number,
-  dataDevolucao: string
+  funcionarioDevolucaoId: number
 ): Promise<void> {
   await pool.query(
     `UPDATE reserva_acervo
-     SET data_devolucao = $1, status = 'devolvida', funcionario_devolucao_id = $2
-     WHERE id = $3`,
-    [dataDevolucao, funcionarioDevolucaoId, reservaId]
+     SET data_devolucao = NOW(), status = 'devolvida', funcionario_devolucao_id = $1
+     WHERE id = $2`,
+    [funcionarioDevolucaoId, reservaId]
   )
 }
 

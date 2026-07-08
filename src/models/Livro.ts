@@ -35,3 +35,8 @@ export interface AtualizarLivroInput {
   autorIds: number[]
   categoriaIds: number[]
 }
+
+export interface LivroComNomesAutores {
+  livro: Livro
+  autores: string[]
+}

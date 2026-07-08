@@ -69,10 +69,15 @@ async function removerCliente(id: number): Promise<boolean> {
   return clienteRepository.deletar(id)
 }
 
+async function listarClientes(): Promise<Cliente[]> {
+  return clienteRepository.listarTodos()
+}
+
 export {
   cadastrarCliente,
   buscarClientePorCpf,
   buscarClientesPorNome,
   atualizarCliente,
-  removerCliente
+  removerCliente,
+  listarClientes
 }

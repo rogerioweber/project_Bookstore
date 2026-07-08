@@ -2,6 +2,7 @@ import { recalcularStatusLivro } from './livroService'
 import { ReservaDetalhada } from '../models/Reserva'
 import * as livroRepository from '../repositories/livroRepository'
 import * as reservaRepository from '../repositories/reservaRepository'
+import { formatarDataBrasil } from '../utils/data'
 
 async function emprestarLivro(
   livroId: number,
@@ -9,8 +10,6 @@ async function emprestarLivro(
   clienteId: number,
   prazoDias: number
 ): Promise<void> {
-  await reservaRepository.atualizarStatusAtrasados()
-
   const possuiEmprestimoAtivo =
     await reservaRepository.existeReservaAtivaPorCliente(clienteId)
   if (possuiEmprestimoAtivo) {
@@ -30,7 +29,7 @@ async function emprestarLivro(
   const hoje = new Date()
   const dataPrevista = new Date(hoje)
   dataPrevista.setDate(dataPrevista.getDate() + prazoDias)
-  const dataPrevistaFormatada = dataPrevista.toISOString().slice(0, 10)
+  const dataPrevistaFormatada = formatarDataBrasil(dataPrevista)
 
   await reservaRepository.criar(
     livroId,
@@ -43,19 +42,14 @@ async function emprestarLivro(
 
 async function devolverLivro(
   reservaId: number,
-  funcionarioDevolucaoId: number,
-  dataDevolucao: string
+  funcionarioDevolucaoId: number
 ): Promise<void> {
   const reserva = await reservaRepository.buscarPorId(reservaId)
   if (!reserva) throw new Error('Reserva não encontrada')
-  if (reserva.status === 'devolvida')
+  if (reserva.status !== 'ativa')
     throw new Error('Essa reserva já foi encerrada')
 
-  await reservaRepository.registrarDevolucao(
-    reservaId,
-    funcionarioDevolucaoId,
-    dataDevolucao
-  )
+  await reservaRepository.registrarDevolucao(reservaId, funcionarioDevolucaoId)
   await recalcularStatusLivro(reserva.livro_id)
 }
 
@@ -86,7 +80,6 @@ async function listarLivrosComEmprestimoAtivo() {
 }
 
 async function listarClientesComEmprestimoAtivo() {
-  await reservaRepository.atualizarStatusAtrasados()
   return reservaRepository.listarClientesComEmprestimoAtivo()
 }
 

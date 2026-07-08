@@ -41,4 +41,49 @@ async function listarComQuantidadeLivros(): Promise<
   return result.rows
 }
 
-export { buscarPorNome, criar, atualizar, listarComQuantidadeLivros }
+async function contarLivrosVinculados(autorId: number): Promise<number> {
+  const result = await pool.query<{ total: string }>(
+    'SELECT COUNT(*)::int AS total FROM livro_autor WHERE autor_id = $1',
+    [autorId]
+  )
+  return Number(result.rows[0].total)
+}
+
+async function deletar(id: number): Promise<boolean> {
+  const result = await pool.query('DELETE FROM autor WHERE id = $1', [id])
+  return (result.rowCount ?? 0) > 0
+}
+
+async function buscarPorId(id: number): Promise<Autor | null> {
+  const result = await pool.query<Autor>('SELECT * FROM autor WHERE id = $1', [
+    id
+  ])
+  return result.rows[0] ?? null
+}
+
+async function listarTodos(): Promise<Autor[]> {
+  const result = await pool.query<Autor>('SELECT * FROM autor ORDER BY nome')
+  return result.rows
+}
+
+async function buscarPorNomeParcial(nome: string): Promise<Autor[]> {
+  const result = await pool.query<Autor>(
+    `SELECT * FROM autor
+     WHERE (nome || ' ' || sobrenome) ILIKE $1
+     ORDER BY nome`,
+    [`%${nome}%`]
+  )
+  return result.rows
+}
+
+export {
+  buscarPorNome,
+  criar,
+  atualizar,
+  listarComQuantidadeLivros,
+  contarLivrosVinculados,
+  deletar,
+  buscarPorId,
+  listarTodos,
+  buscarPorNomeParcial
+}

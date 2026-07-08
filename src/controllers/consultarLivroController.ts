@@ -75,10 +75,19 @@ async function listarTodosFluxo(): Promise<void> {
 
 async function consultarPorAutorFluxo(): Promise<void> {
   const { nome } = await inquirer.prompt<{ nome: string }>([
-    { type: 'input', name: 'nome', message: 'Nome do autor:' }
+    {
+      type: 'input',
+      name: 'nome',
+      message: 'Digite nome ou parte do nome do autor:'
+    }
   ])
 
-  const livros = await listarLivrosPorAutor(nome)
+  if (!nome.trim()) {
+    console.log('Digite ao menos um caractere para buscar.')
+    return
+  }
+
+  const livros = await listarLivrosPorAutor(nome.trim())
   await exibirListaEDetalhe(livros)
 }
 
@@ -109,7 +118,8 @@ async function consultarPorCategoriaFluxo(): Promise<void> {
       type: 'checkbox',
       name: 'nomes',
       message: 'Selecione uma ou mais categorias:',
-      choices: categorias.map((c) => c.nome)
+      choices: categorias.map((c) => c.nome),
+      loop: false
     }
   ])
 
@@ -135,7 +145,8 @@ async function exibirListaEDetalhe(livros: LivroListagem[]): Promise<void> {
       type: 'select',
       name: 'livroId',
       message: 'Selecione um livro:',
-      choices: [...choices, { name: 'Voltar', value: 'voltar' }]
+      choices: [...choices, { name: 'Voltar', value: 'voltar' }],
+      loop: false
     }
   ])
 

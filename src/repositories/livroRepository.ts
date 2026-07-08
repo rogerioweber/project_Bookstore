@@ -6,7 +6,8 @@ import {
   LivroDetalhado,
   OrdenarLivrosPor,
   AtualizarLivroInput,
-  StatusLivro
+  StatusLivro,
+  LivroComNomesAutores
 } from '../models/Livro'
 
 function colunaOrdenacao(ordenarPor: OrdenarLivrosPor): string {
@@ -57,11 +58,11 @@ async function listarPorAutor(nomeAutor: string): Promise<LivroListagem[]> {
      WHERE l.id IN (
        SELECT la2.livro_id FROM livro_autor la2
        INNER JOIN autor a2 ON a2.id = la2.autor_id
-       WHERE LOWER(a2.nome) = LOWER($1)
+       WHERE a2.nome ILIKE $1
      )
      GROUP BY l.id
      ORDER BY l.titulo`,
-    [nomeAutor]
+    [`%${nomeAutor}%`]
   )
 
   return result.rows
@@ -190,6 +191,30 @@ async function buscarPorTitulo(titulo: string): Promise<Livro | null> {
   return result.rows[0] ?? null
 }
 
+async function buscarPorTituloComAutores(
+  titulo: string
+): Promise<LivroComNomesAutores[]> {
+  const result = await pool.query<Livro & { autores: string | null }>(
+    `SELECT l.*, STRING_AGG(a.nome, ', ' ORDER BY a.nome) AS autores
+     FROM livro l
+     LEFT JOIN livro_autor la ON la.livro_id = l.id
+     LEFT JOIN autor a ON a.id = la.autor_id
+     WHERE LOWER(imutavel_unaccent(l.titulo)) = LOWER(imutavel_unaccent($1))
+     GROUP BY l.id`,
+    [titulo]
+  )
+
+  return result.rows.map((row) => ({
+    livro: {
+      id: row.id,
+      titulo: row.titulo,
+      total_exemplares: row.total_exemplares,
+      status: row.status
+    },
+    autores: row.autores ? row.autores.split(', ') : []
+  }))
+}
+
 async function buscarPorId(id: number): Promise<Livro | null> {
   const result = await pool.query<Livro>('SELECT * FROM livro WHERE id = $1', [
     id
@@ -315,6 +340,7 @@ export {
   listarPorCategorias,
   buscarDetalhadoPorId,
   buscarPorTitulo,
+  buscarPorTituloComAutores,
   buscarPorId,
   atualizarStatus,
   criar,
