@@ -66,7 +66,17 @@ async function atualizarCliente(
 }
 
 async function removerCliente(id: number): Promise<boolean> {
-  return clienteRepository.deletar(id)
+  try {
+    return await clienteRepository.deletar(id)
+  } catch (error) {
+    const pgError = error as { code?: string }
+    if (pgError.code === '23001' || pgError.code === '23503') {
+      throw new Error(
+        'Não é possível remover este cliente: ele possui histórico de empréstimos registrado.'
+      )
+    }
+    throw error
+  }
 }
 
 async function listarClientes(): Promise<Cliente[]> {

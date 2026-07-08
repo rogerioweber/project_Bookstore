@@ -1,5 +1,4 @@
-// src/repositories/FuncionarioRepository.ts
-import { pool } from '../database/connection'
+import { pool } from '../infra/database/connection'
 import { Funcionario } from '../models/Funcionario'
 
 export class FuncionarioRepository {

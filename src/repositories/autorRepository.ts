@@ -1,4 +1,4 @@
-import { pool } from '../database/connection'
+import { pool } from '../infra/database/connection'
 import { Autor, AutorComQuantidadeLivros } from '../models/Autor'
 
 async function buscarPorNome(nome: string): Promise<Autor | null> {
@@ -69,7 +69,7 @@ async function listarTodos(): Promise<Autor[]> {
 async function buscarPorNomeParcial(nome: string): Promise<Autor[]> {
   const result = await pool.query<Autor>(
     `SELECT * FROM autor
-     WHERE (nome || ' ' || sobrenome) ILIKE $1
+     WHERE imutavel_unaccent(nome) ILIKE imutavel_unaccent($1)
      ORDER BY nome`,
     [`%${nome}%`]
   )

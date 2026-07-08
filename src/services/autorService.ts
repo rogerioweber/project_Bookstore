@@ -2,6 +2,7 @@ import { Autor, AutorComQuantidadeLivros } from '../models/Autor'
 import {
   buscarPorNome,
   buscarPorId,
+  buscarPorNomeParcial,
   listarTodos,
   criar,
   atualizar,
@@ -67,6 +68,10 @@ async function buscarAutorPorId(id: number): Promise<Autor | null> {
   return buscarPorId(id)
 }
 
+async function buscarAutoresPorNome(nome: string): Promise<Autor[]> {
+  return buscarPorNomeParcial(nome)
+}
+
 export {
   atualizarNomeAutor,
   buscarAutorPorNome,
@@ -74,5 +79,6 @@ export {
   removerAutor,
   cadastrarAutor,
   listarAutores,
-  buscarAutorPorId
+  buscarAutorPorId,
+  buscarAutoresPorNome
 }

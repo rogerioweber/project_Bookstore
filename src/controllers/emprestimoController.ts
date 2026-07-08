@@ -1,5 +1,3 @@
-import inquirer from 'inquirer'
-
 import { Cliente } from '../models/Cliente'
 import { Funcionario } from '../models/Funcionario'
 import {
@@ -15,21 +13,23 @@ import {
   devolverLivro,
   listarAtivasPorLivro
 } from '../services/reservaService'
+import {
+  selecionarOpcao,
+  confirmar,
+  pedirTexto,
+  pedirNumero,
+  selecionarItem
+} from '../utils/prompts'
 
 async function emprestimoMenuController(
   funcionario: Funcionario
 ): Promise<void> {
   for (;;) {
-    const { opcao } = await inquirer.prompt<{
-      opcao: 'Emprestar livro' | 'Devolver livro' | 'Voltar'
-    }>([
-      {
-        type: 'select',
-        name: 'opcao',
-        message: 'Gerenciar empréstimos',
-        choices: ['Emprestar livro', 'Devolver livro', 'Voltar']
-      }
-    ])
+    const opcao = await selecionarOpcao('Gerenciar empréstimos', [
+      'Emprestar livro',
+      'Devolver livro',
+      'Voltar'
+    ] as const)
 
     if (opcao === 'Voltar') break
 
@@ -38,20 +38,12 @@ async function emprestimoMenuController(
       if (opcao === 'Devolver livro') await devolverFluxo(funcionario)
     } catch (error) {
       console.log((error as Error).message)
-      return
     }
   }
 }
 
-// ----- Seleção de livro por busca (título ou autor) -----
 async function selecionarLivroFluxo(): Promise<number | null> {
-  const { termo } = await inquirer.prompt<{ termo: string }>([
-    {
-      type: 'input',
-      name: 'termo',
-      message: 'Digite parte do título ou do nome do autor:'
-    }
-  ])
+  const termo = await pedirTexto('Digite parte do título ou do nome do autor:')
 
   if (!termo.trim()) {
     console.log('Digite ao menos um caractere para buscar.')
@@ -65,89 +57,49 @@ async function selecionarLivroFluxo(): Promise<number | null> {
     return null
   }
 
-  const { livroId } = await inquirer.prompt<{ livroId: number | 'voltar' }>([
-    {
-      type: 'select',
-      name: 'livroId',
-      message: 'Selecione o livro:',
-      choices: [
-        ...livros.map((l) => ({
-          name: `${l.titulo} — ${l.autores ?? 'sem autor'} (${l.status}, ${String(l.total_exemplares)} exemplar(es))`,
-          value: l.id
-        })),
-        { name: 'Voltar', value: 'voltar' as const }
-      ],
-      loop: false
-    }
-  ])
+  const selecionado = await selecionarItem(
+    'Selecione o livro:',
+    livros,
+    (l) =>
+      `${l.titulo} — ${l.autores ?? 'sem autor'} (${l.status}, ${String(l.total_exemplares)} exemplar(es))`
+  )
 
-  if (livroId === 'voltar') return null
-  return livroId
+  return selecionado ? selecionado.id : null
 }
 
-// ----- Seleção/cadastro de cliente por CPF ou nome -----
 async function selecionarClienteFluxo(): Promise<Cliente | null> {
-  const { modoBusca } = await inquirer.prompt<{
-    modoBusca: 'Buscar por nome' | 'Buscar por CPF' | 'Cancelar'
-  }>([
-    {
-      type: 'select',
-      name: 'modoBusca',
-      message: 'Como deseja localizar o cliente?',
-      choices: ['Buscar por nome', 'Buscar por CPF', 'Cancelar']
-    }
-  ])
+  const modoBusca = await selecionarOpcao('Como deseja localizar o cliente?', [
+    'Buscar por nome',
+    'Buscar por CPF',
+    'Cancelar'
+  ] as const)
 
   if (modoBusca === 'Cancelar') return null
 
   let cliente: Cliente | null = null
 
   if (modoBusca === 'Buscar por CPF') {
-    const { cpf } = await inquirer.prompt<{ cpf: string }>([
-      { type: 'input', name: 'cpf', message: 'CPF do cliente:' }
-    ])
+    const cpf = await pedirTexto('CPF do cliente:')
     cliente = await buscarClientePorCpf(cpf)
   } else {
-    const { nome } = await inquirer.prompt<{ nome: string }>([
-      { type: 'input', name: 'nome', message: 'Nome (ou parte dele):' }
-    ])
+    const nome = await pedirTexto('Nome (ou parte dele):')
     const encontrados = await buscarClientesPorNome(nome)
 
     if (encontrados.length > 0) {
-      const { clienteId } = await inquirer.prompt<{
-        clienteId: number | 'voltar'
-      }>([
-        {
-          type: 'select',
-          name: 'clienteId',
-          message: 'Selecione o cliente:',
-          choices: [
-            ...encontrados.map((c) => ({
-              name: `${c.nome} ${c.sobrenome}`,
-              value: c.id
-            })),
-            { name: 'Nenhum destes', value: 'voltar' as const }
-          ],
-          loop: false
-        }
-      ])
-
-      if (clienteId !== 'voltar') {
-        cliente = encontrados.find((c) => c.id === clienteId) ?? null
-      }
+      cliente = await selecionarItem(
+        'Selecione o cliente:',
+        encontrados,
+        (c) => `${c.nome} ${c.sobrenome}`
+      )
     }
   }
 
   if (cliente) {
-    const { confirmar } = await inquirer.prompt<{ confirmar: boolean }>([
-      {
-        type: 'confirm',
-        name: 'confirmar',
-        message: `Cliente: ${cliente.nome} ${cliente.sobrenome} — CPF ${cliente.cpf}. É esse mesmo?`,
-        default: true
-      }
-    ])
-    return confirmar ? cliente : null
+    const confirmado = await confirmar(
+      `Cliente: ${cliente.nome} ${cliente.sobrenome} — CPF ${cliente.cpf}. É esse mesmo?`,
+      true
+    )
+    return confirmado ? cliente : null
   }
 
   console.log(
@@ -156,7 +108,6 @@ async function selecionarClienteFluxo(): Promise<Cliente | null> {
   return null
 }
 
-// ----- Fluxos principais -----
 async function emprestarFluxo(funcionario: Funcionario): Promise<void> {
   const livroId = await selecionarLivroFluxo()
   if (livroId === null) return
@@ -180,14 +131,7 @@ async function emprestarFluxo(funcionario: Funcionario): Promise<void> {
     return
   }
 
-  const { prazoDias } = await inquirer.prompt<{ prazoDias: number }>([
-    {
-      type: 'number',
-      name: 'prazoDias',
-      message: 'Prazo para devolução (em dias):',
-      default: 7
-    }
-  ])
+  const prazoDias = await pedirNumero('Prazo para devolução (em dias):', 7)
 
   await emprestarLivro(livroId, funcionario.id, cliente.id, prazoDias)
   console.log('Empréstimo registrado com sucesso!')
@@ -204,19 +148,15 @@ async function devolverFluxo(funcionario: Funcionario): Promise<void> {
     return
   }
 
-  const { reservaId } = await inquirer.prompt<{ reservaId: number }>([
-    {
-      type: 'select',
-      name: 'reservaId',
-      message: 'Qual reserva devolver?',
-      choices: ativas.map((r) => ({
-        name: `${r.cliente_nome} — emprestado em ${r.data_reserva}`,
-        value: r.id
-      }))
-    }
-  ])
+  const reserva = await selecionarItem(
+    'Qual reserva devolver?',
+    ativas,
+    (r) => `${r.cliente_nome} — emprestado em ${r.data_reserva}`
+  )
 
-  await devolverLivro(reservaId, funcionario.id)
+  if (!reserva) return
+
+  await devolverLivro(reserva.id, funcionario.id)
   console.log('Devolução registrada com sucesso!')
 }
 

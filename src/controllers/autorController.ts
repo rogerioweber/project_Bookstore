@@ -1,49 +1,27 @@
-import inquirer from 'inquirer'
-
+import { Autor } from '../models/Autor'
 import {
   cadastrarAutor,
   listarAutores,
-  buscarAutorPorId,
+  buscarAutoresPorNome,
   atualizarNomeAutor,
-  removerAutor,
-  buscarAutorPorNome
+  removerAutor
 } from '../services/autorService'
+import { consultarComModos } from '../utils/fluxoConsulta'
+import { selecionarOpcao, confirmar, pedirTexto } from '../utils/prompts'
 
 async function autorController(): Promise<void> {
   for (;;) {
-    const { opcao } = await inquirer.prompt<{
-      opcao:
-        | 'Cadastrar autor'
-        | 'Listar autores'
-        | 'Consultar autor nome (ou parte dele)'
-        | 'Atualizar autor'
-        | 'Remover autor'
-        | 'Voltar'
-    }>([
-      {
-        type: 'select',
-        name: 'opcao',
-        message: 'Gerenciar autores',
-        choices: [
-          'Cadastrar autor',
-          'Listar autores',
-          'Consultar autor nome (ou parte dele)',
-          'Atualizar autor',
-          'Remover autor',
-          'Voltar'
-        ]
-      }
-    ])
+    const opcao = await selecionarOpcao('Gerenciar autores', [
+      'Cadastrar autor',
+      'Consultar autores',
+      'Voltar'
+    ] as const)
 
     if (opcao === 'Voltar') break
 
     try {
       if (opcao === 'Cadastrar autor') await cadastrarAutorFluxo()
-      if (opcao === 'Listar autores') await listarAutoresFluxo()
-      if (opcao === 'Consultar autor nome (ou parte dele)')
-        await consultarAutorFluxo()
-      if (opcao === 'Atualizar autor') await atualizarAutorFluxo()
-      if (opcao === 'Remover autor') await removerAutorFluxo()
+      if (opcao === 'Consultar autores') await consultarAutoresFluxo()
     } catch (error) {
       console.log((error as Error).message)
     }
@@ -51,106 +29,62 @@ async function autorController(): Promise<void> {
 }
 
 async function cadastrarAutorFluxo(): Promise<void> {
-  const { nome } = await inquirer.prompt<{ nome: string }>([
-    { type: 'input', name: 'nome', message: 'Nome do autor:' }
-  ])
-
+  const nome = await pedirTexto('Nome do autor:')
   const autor = await cadastrarAutor(nome)
-  console.log(
-    `Autor "${autor.nome}" cadastrado com sucesso! (id: ${String(autor.id)})`
+  console.log(`Autor "${autor.nome}" cadastrado com sucesso!`)
+}
+
+async function consultarAutoresFluxo(): Promise<void> {
+  await consultarComModos<Autor>(
+    'Consultar autores',
+    [
+      { rotulo: 'Listar todos', buscar: listarAutores },
+      {
+        rotulo: 'Buscar por nome',
+        buscar: async () => {
+          const nome = await pedirTexto('Digite o nome ou parte dele:')
+          if (!nome.trim()) {
+            console.log('Digite ao menos um caractere para buscar.')
+            return []
+          }
+          return buscarAutoresPorNome(nome.trim())
+        }
+      }
+    ],
+    (a) => a.nome,
+    detalheAutorFluxo
   )
 }
 
-async function listarAutoresFluxo(): Promise<void> {
-  const autores = await listarAutores()
-
-  if (autores.length === 0) {
-    console.log('Nenhum autor cadastrado.')
-    return
-  }
-
-  console.log('\n----- Autores cadastrados -----')
-  for (const a of autores) {
-    console.log(`[${String(a.id)}] ${a.nome}`)
-  }
-  console.log('--------------------------------\n')
-}
-
-async function consultarAutorFluxo(): Promise<void> {
-  const { nome } = await inquirer.prompt<{ nome: string }>([
-    { type: 'input', name: 'nome', message: 'Digite o nome ou parte dele:' }
-  ])
-
-  if (!nome.trim()) {
-    console.log('Digite ao menos um caractere para buscar.')
-    return
-  }
-  const autor = await buscarAutorPorNome(nome.trim())
-
-  if (!autor) {
-    console.log('Autor não encontrado.')
-    return
-  }
-
+async function detalheAutorFluxo(autor: Autor): Promise<void> {
   console.log(`\nID: ${String(autor.id)}\nNome: ${autor.nome}\n`)
-}
 
-async function atualizarAutorFluxo(): Promise<void> {
-  const { id } = await inquirer.prompt<{ id: number }>([
-    { type: 'number', name: 'id', message: 'ID do autor a atualizar:' }
-  ])
+  const acao = await selecionarOpcao('O que deseja fazer?', [
+    'Atualizar autor',
+    'Remover autor',
+    'Voltar'
+  ] as const)
 
-  const autor = await buscarAutorPorId(id)
-  if (!autor) {
-    console.log('Autor não encontrado.')
-    return
-  }
+  if (acao === 'Voltar') return
+  if (acao === 'Remover autor') return removerAutorFluxo(autor)
 
-  const { novoNome } = await inquirer.prompt<{ novoNome: string }>([
-    {
-      type: 'input',
-      name: 'novoNome',
-      message: 'Novo nome:',
-      default: autor.nome
-    }
-  ])
-
-  const atualizado = await atualizarNomeAutor(id, novoNome)
+  const novoNome = await pedirTexto('Novo nome:', autor.nome)
+  const atualizado = await atualizarNomeAutor(autor.id, novoNome)
   console.log(`Autor atualizado para "${atualizado.nome}" com sucesso!`)
 }
 
-async function removerAutorFluxo(): Promise<void> {
-  const { id } = await inquirer.prompt<{ id: number }>([
-    { type: 'number', name: 'id', message: 'ID do autor a remover:' }
-  ])
+async function removerAutorFluxo(autor: Autor): Promise<void> {
+  const confirmado = await confirmar(
+    `Tem certeza que deseja remover "${autor.nome}"?`
+  )
 
-  const autor = await buscarAutorPorId(id)
-  if (!autor) {
-    console.log('Autor não encontrado.')
-    return
-  }
-
-  const { confirmar } = await inquirer.prompt<{ confirmar: boolean }>([
-    {
-      type: 'confirm',
-      name: 'confirmar',
-      message: `Tem certeza que deseja remover "${autor.nome}"?`,
-      default: false
-    }
-  ])
-
-  if (!confirmar) {
+  if (!confirmado) {
     console.log('Remoção cancelada.')
     return
   }
 
-  try {
-    await removerAutor(id)
-    console.log('Autor removido com sucesso.')
-  } catch (error) {
-    console.log((error as Error).message)
-    return
-  }
+  await removerAutor(autor.id)
+  console.log('Autor removido com sucesso.')
 }
 
 export { autorController }

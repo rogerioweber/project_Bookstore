@@ -1,5 +1,3 @@
-import inquirer from 'inquirer'
-
 import {
   atualizarNomeAutor,
   buscarAutorPorNome
@@ -10,8 +8,14 @@ import {
   removerLivro,
   resolverCategoriaIds
 } from '../services/livroService'
+import {
+  selecionarOpcao,
+  confirmar,
+  pedirTexto,
+  pedirNumero
+} from '../utils/prompts'
 
-async function detalheLivroController(livroId: number): Promise<void> {
+async function livroDetalheController(livroId: number): Promise<void> {
   const livro = await buscarLivroDetalhado(livroId)
 
   if (!livro) {
@@ -31,23 +35,14 @@ async function detalheLivroController(livroId: number): Promise<void> {
   )
   console.log('------------------------------\n')
 
-  const { opcao } = await inquirer.prompt<{
-    opcao: 'Atualizar livro' | 'Remover livro' | 'Voltar'
-  }>([
-    {
-      type: 'select',
-      name: 'opcao',
-      message: 'O que deseja fazer?',
-      choices: ['Atualizar livro', 'Remover livro', 'Voltar']
-    }
-  ])
+  const opcao = await selecionarOpcao('O que deseja fazer?', [
+    'Atualizar livro',
+    'Remover livro',
+    'Voltar'
+  ] as const)
 
   if (opcao === 'Voltar') return
-
-  if (opcao === 'Remover livro') {
-    await removerLivroFluxo(livroId, livro.titulo)
-    return
-  }
+  if (opcao === 'Remover livro') return removerLivroFluxo(livroId, livro.titulo)
 
   await atualizarLivroFluxo(livroId)
 }
@@ -56,16 +51,11 @@ async function removerLivroFluxo(
   livroId: number,
   titulo: string
 ): Promise<void> {
-  const { confirmar } = await inquirer.prompt<{ confirmar: boolean }>([
-    {
-      type: 'confirm',
-      name: 'confirmar',
-      message: `Tem certeza que deseja remover "${titulo}"?`,
-      default: false
-    }
-  ])
+  const confirmado = await confirmar(
+    `Tem certeza que deseja remover "${titulo}"?`
+  )
 
-  if (!confirmar) {
+  if (!confirmado) {
     console.log('Remoção cancelada.')
     return
   }
@@ -77,6 +67,7 @@ async function removerLivroFluxo(
     console.log((error as Error).message)
   }
 }
+
 async function atualizarLivroFluxo(livroId: number): Promise<void> {
   const livro = await buscarLivroDetalhado(livroId)
   if (!livro) return
@@ -84,19 +75,13 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
   const autoresAtualizados: { id: number; nome: string }[] = []
 
   for (const autor of livro.autores) {
-    const { novoNome } = await inquirer.prompt<{ novoNome: string }>([
-      {
-        type: 'input',
-        name: 'novoNome',
-        message: `Nome do autor (id ${String(autor.id)}):`,
-        default: autor.nome
-      }
-    ])
-
+    const novoNome = await pedirTexto(
+      `Nome do autor (id ${String(autor.id)}):`,
+      autor.nome
+    )
     const nomeTrimado = novoNome.trim()
 
     if (nomeTrimado === autor.nome) {
-      // não mudou nada
       autoresAtualizados.push({ id: autor.id, nome: autor.nome })
       continue
     }
@@ -104,15 +89,10 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
     const existente = await buscarAutorPorNome(nomeTrimado)
 
     if (existente && existente.id !== autor.id) {
-      // Já existe outro autor com esse nome — pergunta se quer vincular a ele
-      const { vincular } = await inquirer.prompt<{ vincular: boolean }>([
-        {
-          type: 'confirm',
-          name: 'vincular',
-          message: `Já existe o autor "${existente.nome}" cadastrado. Deseja vincular o livro a ele (em vez de renomear "${autor.nome}")?`,
-          default: true
-        }
-      ])
+      const vincular = await confirmar(
+        `Já existe o autor "${existente.nome}" cadastrado. Deseja vincular o livro a ele (em vez de renomear "${autor.nome}")?`,
+        true
+      )
 
       if (vincular) {
         autoresAtualizados.push({ id: existente.id, nome: existente.nome })
@@ -123,37 +103,21 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
       continue
     }
 
-    // Nome novo, não existe ainda -> renomear normalmente
     const atualizado = await atualizarNomeAutor(autor.id, nomeTrimado)
     autoresAtualizados.push({ id: atualizado.id, nome: atualizado.nome })
   }
 
-  const resposta = await inquirer.prompt<{
-    titulo: string
-    totalExemplares: number
-    categorias: string
-  }>([
-    {
-      type: 'input',
-      name: 'titulo',
-      message: 'Novo título:',
-      default: livro.titulo
-    },
-    {
-      type: 'number',
-      name: 'totalExemplares',
-      message: 'Nova quantidade de exemplares:',
-      default: livro.total_exemplares
-    },
-    {
-      type: 'input',
-      name: 'categorias',
-      message: 'Categoria(s) (separe por vírgula):',
-      default: livro.categorias.map((c) => c.nome).join(', ')
-    }
-  ])
+  const titulo = await pedirTexto('Novo título:', livro.titulo)
+  const totalExemplares = await pedirNumero(
+    'Nova quantidade de exemplares:',
+    livro.total_exemplares
+  )
+  const categoriasTexto = await pedirTexto(
+    'Categoria(s) (separe por vírgula):',
+    livro.categorias.map((c) => c.nome).join(', ')
+  )
 
-  const nomesCategorias = resposta.categorias
+  const nomesCategorias = categoriasTexto
     .split(',')
     .map((nome) => nome.trim())
     .filter((nome) => nome.length > 0)
@@ -166,8 +130,8 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
   const categoriaIds = await resolverCategoriaIds(nomesCategorias)
 
   await atualizarLivro(livroId, {
-    titulo: resposta.titulo,
-    totalExemplares: resposta.totalExemplares,
+    titulo,
+    totalExemplares,
     autorIds: autoresAtualizados.map((a) => a.id),
     categoriaIds
   })
@@ -175,4 +139,4 @@ async function atualizarLivroFluxo(livroId: number): Promise<void> {
   console.log('Livro atualizado com sucesso!')
 }
 
-export { detalheLivroController }
+export { livroDetalheController }

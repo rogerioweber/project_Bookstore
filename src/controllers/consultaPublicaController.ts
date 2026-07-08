@@ -1,15 +1,8 @@
-import inquirer from 'inquirer'
-
 import { listarLivrosPorTituloOuAutor } from '../services/livroService'
+import { pedirTexto } from '../utils/prompts'
 
 async function consultaPublicaController(): Promise<void> {
-  const { termo } = await inquirer.prompt<{ termo: string }>([
-    {
-      type: 'input',
-      name: 'termo',
-      message: 'Digite o título do livro ou o nome do autor:'
-    }
-  ])
+  const termo = await pedirTexto('Digite o título do livro ou o nome do autor:')
 
   if (!termo.trim()) {
     console.log('Digite ao menos um caractere para buscar.')
