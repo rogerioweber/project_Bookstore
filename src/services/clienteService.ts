@@ -1,5 +1,7 @@
 import { Cliente, AtualizarClienteInput } from '../models/Cliente'
 import * as clienteRepository from '../repositories/clienteRepository'
+import * as reservaRepository from '../repositories/reservaRepository'
+import { obterIniciais } from '../utils/texto'
 
 function validarCpf(cpf: string): string {
   const digitos = cpf.replace(/\D/g, '')
@@ -14,6 +16,7 @@ function validarEmail(email: string): string {
   if (!emailTrimado.includes('@')) throw new Error('Email inválido.')
   return emailTrimado
 }
+
 async function cadastrarCliente(
   nome: string,
   sobrenome: string,
@@ -65,22 +68,49 @@ async function atualizarCliente(
   return clienteRepository.atualizar(id, { ...dados, email: emailValido })
 }
 
+async function listarClientes(): Promise<Cliente[]> {
+  return clienteRepository.listarTodos()
+}
+
+async function possuiHistorico(id: number): Promise<boolean> {
+  return reservaRepository.existeHistoricoPorCliente(id)
+}
+
 async function removerCliente(id: number): Promise<boolean> {
-  try {
-    return await clienteRepository.deletar(id)
-  } catch (error) {
-    const pgError = error as { code?: string }
-    if (pgError.code === '23001' || pgError.code === '23503') {
-      throw new Error(
-        'Não é possível remover este cliente: ele possui histórico de empréstimos registrado.'
-      )
-    }
-    throw error
+  return clienteRepository.deletar(id)
+}
+
+async function anonimizarCliente(cliente: Cliente): Promise<Cliente> {
+  const emprestimoAtivo = await possuiEmprestimoAtivo(cliente.id)
+
+  if (emprestimoAtivo) {
+    throw new Error(
+      'Não é possível remover! Este cliente ainda possui livro emprestado sem devolução registrada.'
+    )
+  }
+
+  const nomeAnonimizado = obterIniciais(cliente.nome)
+  const sobrenomeAnonimizado = obterIniciais(cliente.sobrenome)
+
+  await clienteRepository.anonimizar(
+    cliente.id,
+    nomeAnonimizado,
+    sobrenomeAnonimizado
+  )
+
+  return {
+    ...cliente,
+    nome: nomeAnonimizado,
+    sobrenome: sobrenomeAnonimizado,
+    email: '',
+    telefone: '',
+    cpf: null,
+    anonimizado: true
   }
 }
 
-async function listarClientes(): Promise<Cliente[]> {
-  return clienteRepository.listarTodos()
+async function possuiEmprestimoAtivo(id: number): Promise<boolean> {
+  return reservaRepository.existeReservaAtivaPorCliente(id)
 }
 
 export {
@@ -89,5 +119,8 @@ export {
   buscarClientesPorNome,
   atualizarCliente,
   removerCliente,
-  listarClientes
+  listarClientes,
+  possuiHistorico,
+  anonimizarCliente,
+  possuiEmprestimoAtivo
 }

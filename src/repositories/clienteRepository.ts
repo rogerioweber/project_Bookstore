@@ -3,7 +3,7 @@ import { AtualizarClienteInput, Cliente } from '../models/Cliente'
 
 async function buscarPorCpf(cpf: string): Promise<Cliente | null> {
   const result = await pool.query<Cliente>(
-    'SELECT * FROM cliente WHERE cpf = $1',
+    'SELECT * FROM cliente WHERE cpf = $1 AND anonimizado = false',
     [cpf]
   )
   return result.rows[0] ?? null
@@ -19,7 +19,7 @@ async function buscarPorId(id: number): Promise<Cliente | null> {
 
 async function listarTodos(): Promise<Cliente[]> {
   const result = await pool.query<Cliente>(
-    'SELECT * FROM cliente ORDER BY nome, sobrenome'
+    'SELECT * FROM cliente WHERE anonimizado = false ORDER BY nome, sobrenome'
   )
   return result.rows
 }
@@ -42,7 +42,7 @@ async function criar(
 async function buscarPorNomeParcial(nome: string): Promise<Cliente[]> {
   const result = await pool.query<Cliente>(
     `SELECT * FROM cliente
-     WHERE (nome || ' ' || sobrenome) ILIKE $1
+     WHERE (nome || ' ' || sobrenome) ILIKE $1 AND anonimizado = false
      ORDER BY nome`,
     [`%${nome}%`]
   )
@@ -68,6 +68,19 @@ async function deletar(id: number): Promise<boolean> {
   return (result.rowCount ?? 0) > 0
 }
 
+async function anonimizar(
+  id: number,
+  nomeAnonimizado: string,
+  sobrenomeAnonimizado: string
+): Promise<void> {
+  await pool.query(
+    `UPDATE cliente
+     SET nome = $1, sobrenome = $2, email = '', telefone = '', cpf = NULL, anonimizado = true
+     WHERE id = $3`,
+    [nomeAnonimizado, sobrenomeAnonimizado, id]
+  )
+}
+
 export {
   buscarPorCpf,
   buscarPorId,
@@ -75,5 +88,6 @@ export {
   criar,
   buscarPorNomeParcial,
   atualizar,
-  deletar
+  deletar,
+  anonimizar
 }

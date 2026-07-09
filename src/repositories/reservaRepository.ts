@@ -182,6 +182,14 @@ async function atualizarStatusAtrasados(): Promise<void> {
   )
 }
 
+async function existeHistoricoPorCliente(clienteId: number): Promise<boolean> {
+  const result = await pool.query<{ total: string }>(
+    'SELECT COUNT(*)::int AS total FROM reserva_acervo WHERE cliente_id = $1',
+    [clienteId]
+  )
+  return Number(result.rows[0].total) > 0
+}
+
 export {
   contarAtivasPorLivro,
   criar,
@@ -193,5 +201,6 @@ export {
   listarLivrosComEmprestimoAtivo,
   listarClientesComEmprestimoAtivo,
   existeReservaAtivaPorCliente,
-  atualizarStatusAtrasados
+  atualizarStatusAtrasados,
+  existeHistoricoPorCliente
 }

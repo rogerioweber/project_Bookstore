@@ -96,7 +96,7 @@ async function selecionarClienteFluxo(): Promise<Cliente | null> {
 
   if (cliente) {
     const confirmado = await confirmar(
-      `Cliente: ${cliente.nome} ${cliente.sobrenome} — CPF ${cliente.cpf}. É esse mesmo?`,
+      `Cliente: ${cliente.nome} ${cliente.sobrenome} — CPF ${cliente.cpf ?? '-'}. É esse mesmo?`,
       true
     )
     return confirmado ? cliente : null

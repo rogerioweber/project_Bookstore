@@ -1,6 +1,6 @@
 -- =====================================================================
 -- EXTENSÕES E FUNÇÕES AUXILIARES
--- =====================================================================CREATE EXTENSION IF NOT EXISTS unaccent;
+-- =====================================================================
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
 CREATE OR REPLACE FUNCTION imutavel_unaccent(texto TEXT)
@@ -100,12 +100,13 @@ ON funcionario (LOWER(usuario));
 -- Cliente da livraria que solicita reservas
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS cliente (
-    id          SERIAL PRIMARY KEY,
-    nome        VARCHAR(100) NOT NULL,
-    sobrenome   VARCHAR(100) NOT NULL,
-    cpf         VARCHAR(11) UNIQUE NOT NULL,
-    email       VARCHAR(150) UNIQUE NOT NULL,
-    telefone    VARCHAR(20) NOT NULL
+    id           SERIAL PRIMARY KEY,
+    nome         VARCHAR(100) NOT NULL,
+    sobrenome    VARCHAR(100) NOT NULL,
+    cpf          VARCHAR(11) UNIQUE,
+    email        VARCHAR(150) NOT NULL,
+    telefone     VARCHAR(20) NOT NULL,
+    anonimizado  BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cliente_email_unico
