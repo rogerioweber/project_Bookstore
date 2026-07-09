@@ -45,19 +45,73 @@ O projeto segue uma **arquitetura em camadas**, separando responsabilidades para
 ## 📁 Estrutura de pastas
 
 ```
-src/
-├── controllers/       # Fluxos de interação (cadastro, consulta, detalhe, empréstimo...)
-├── services/          # Regras de negócio
-├── repositories/       # Acesso ao banco de dados (SQL)
-├── models/             # Interfaces e tipos TypeScript
-├── menus/               # Menus principais de navegação
-├── database/            # Conexão com o PostgreSQL e schema.sql
-├── utils/                # Prompts reutilizáveis, validação de texto, datas, etc.
-└── main.ts                # Ponto de entrada da aplicação
-
-infra/
-└── docker/
-    └── docker-compose.yml  # Configuração do container PostgreSQL
+Projeto Livraria/
+├── src/
+│   ├── controllers/        # Fluxos de interação (cadastro, consulta, detalhe, empréstimo...)
+│   │   ├── autorController.ts
+│   │   ├── clienteCadastrarController.ts
+│   │   ├── clienteConsultarController.ts
+│   │   ├── consultaPublicaController.ts
+│   │   ├── emprestimoController.ts
+│   │   ├── funcionarioCadastroController.ts
+│   │   ├── funcionarioLoginController.ts
+│   │   ├── livroCadastroController.ts
+│   │   ├── livroConsultarController.ts
+│   │   ├── livroDetalheController.ts
+│   │   └── relatorioController.ts
+│   │
+│   ├── services/            # Regras de negócio e validações
+│   │   ├── autorService.ts
+│   │   ├── categoriaService.ts
+│   │   ├── clienteService.ts
+│   │   ├── funcionarioService.ts
+│   │   ├── livroService.ts
+│   │   └── reservaService.ts
+│   │
+│   ├── repositories/         # Acesso ao banco de dados (SQL puro via pg)
+│   │   ├── autorRepository.ts
+│   │   ├── categoriaRepository.ts
+│   │   ├── clienteRepository.ts
+│   │   ├── funcionarioRepository.ts
+│   │   ├── livroRepository.ts
+│   │   └── reservaRepository.ts
+│   │
+│   ├── models/                # Interfaces e tipos TypeScript
+│   │   ├── Autor.ts
+│   │   ├── Categoria.ts
+│   │   ├── Cliente.ts
+│   │   ├── Funcionario.ts
+│   │   ├── Livro.ts
+│   │   └── Reserva.ts
+│   │
+│   ├── menus/                  # Menus principais de navegação
+│   │   ├── adminMenuController.ts
+│   │   ├── loginMenuController.ts
+│   │   └── menuInicial.ts
+│   │
+│   ├── infra/                   # Infraestrutura de acesso ao banco
+│   │   └── database/
+│   │       ├── connection.ts     # Conexão com o PostgreSQL
+│   │       └── schema.sql        # Script de criação das tabelas
+│   │
+│   ├── utils/                     # Funções reutilizáveis
+│   │   ├── data.ts                 # Formatação de datas (fuso horário do Brasil)
+│   │   ├── fluxoConsulta.ts         # Fluxo genérico de listar/buscar/selecionar
+│   │   ├── prompts.ts                # Helpers reutilizáveis do Inquirer
+│   │   └── texto.ts                   # Normalização de texto (capitalizar, iniciais)
+│   │
+│   └── main.ts                          # Ponto de entrada da aplicação
+│
+├── docker/
+│   └── docker-compose.yml                # Configuração do container PostgreSQL
+│
+├── .env                                    # Variáveis de ambiente (não versionado)
+├── .gitignore
+├── .prettierrc
+├── eslint.config.mjs
+├── package.json
+├── README.md
+└── tsconfig.json
 ```
 
 ---
