@@ -184,7 +184,7 @@ Um livro pode ter **vários autores** e **várias categorias**, e um autor/categ
 
 ### 1. Clone o repositório
 ```bash
-git clone <https://github.com/rogerioweber/project_Bookstore.git>
+git clone https://github.com/rogerioweber/project_Bookstore.git
 cd Projeto-Livraria
 ```
 
@@ -262,4 +262,4 @@ Cada funcionalidade é desenvolvida em uma branch própria a partir de `develop`
 
 ---
 
-Desenvolvido por **[Rogério Weber]** como projeto acadêmico.
+Desenvolvido por **Rogério Weber** como projeto acadêmico.
