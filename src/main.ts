@@ -1,5 +1,5 @@
-import { menuController } from './controllers/menu'
-import { testConnection } from './database/connection'
+import { testConnection } from './infra/database/connection'
+import { menuController } from './menus/menuInicial'
 
 async function main() {
   console.log('Iniciando programa BookStore')
@@ -7,14 +7,14 @@ async function main() {
   try {
     await testConnection()
   } catch (error) {
-    console.log(error)
+    console.log((error as Error).message)
   }
   try {
     while (rodando) {
       rodando = await menuController()
     }
   } catch (error) {
-    console.log(error)
+    console.log((error as Error).message)
   } finally {
     console.log('Encerrando programa...')
     console.log('Programa finalizado.')

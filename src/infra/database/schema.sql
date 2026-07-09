@@ -1,4 +1,15 @@
 -- =====================================================================
+-- EXTENSÕES E FUNÇÕES AUXILIARES
+-- =====================================================================
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+CREATE OR REPLACE FUNCTION imutavel_unaccent(texto TEXT)
+RETURNS TEXT AS $$
+  SELECT public.unaccent(texto);
+$$ LANGUAGE sql IMMUTABLE PARALLEL SAFE
+SET search_path = public;
+
+-- =====================================================================
 -- TABELA: autor
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS autor (
@@ -7,7 +18,7 @@ CREATE TABLE IF NOT EXISTS autor (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_autor_nome_unico
-ON autor (LOWER(nome));
+ON autor (LOWER(imutavel_unaccent(nome)));
 
 -- =====================================================================
 -- TABELA: categoria
@@ -18,7 +29,7 @@ CREATE TABLE IF NOT EXISTS categoria (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_categoria_nome_unico
-ON categoria (LOWER(nome));
+ON categoria (LOWER(imutavel_unaccent(nome)));
 
 -- =====================================================================
 -- TABELA: livro
@@ -31,13 +42,11 @@ CREATE TABLE IF NOT EXISTS livro (
                             CHECK (status IN ('disponivel', 'indisponivel'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_livro_titulo_unico
-ON livro (LOWER(titulo));
-
 -- =====================================================================
 -- TABELA: livro_autor
 -- Relação N:N entre livro e autor (um livro pode ter vários autores
 -- e um autor pode ter escrito vários livros)
+-- Depende de: livro, autor
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS livro_autor (
     livro_id    INTEGER NOT NULL REFERENCES livro(id)
@@ -56,6 +65,7 @@ CREATE INDEX IF NOT EXISTS idx_livro_autor_autor_id ON livro_autor(autor_id);
 -- TABELA: categoria_livro
 -- Relação N:N entre livro e categoria (um livro pode ter várias
 -- categorias e uma categoria pode estar em vários livros)
+-- Depende de: livro, categoria
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS categoria_livro (
     livro_id      INTEGER NOT NULL REFERENCES livro(id)
@@ -78,48 +88,63 @@ CREATE TABLE IF NOT EXISTS funcionario (
     id          SERIAL PRIMARY KEY,
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
-    email       VARCHAR(150) UNIQUE NOT NULL,
-    senha       VARCHAR(255) NOT NULL  -- armazenar sempre com hash (ex.: bcrypt), nunca em texto puro
+    usuario       VARCHAR(25) NOT NULL,
+    senha       VARCHAR(100) NOT NULL
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_funcionario_usuario_unico
+ON funcionario (LOWER(usuario));
+
 -- =====================================================================
--- TABELA: usuario
+-- TABELA: cliente
 -- Cliente da livraria que solicita reservas
 -- =====================================================================
-CREATE TABLE IF NOT EXISTS usuario (
-    id          SERIAL PRIMARY KEY,
-    nome        VARCHAR(100) NOT NULL,
-    sobrenome   VARCHAR(100) NOT NULL,
-    cpf         VARCHAR(14) UNIQUE NOT NULL,
-    email       VARCHAR(150) UNIQUE
+CREATE TABLE IF NOT EXISTS cliente (
+    id           SERIAL PRIMARY KEY,
+    nome         VARCHAR(100) NOT NULL,
+    sobrenome    VARCHAR(100) NOT NULL,
+    cpf          VARCHAR(11) UNIQUE,
+    email        VARCHAR(150) NOT NULL,
+    telefone     VARCHAR(20) NOT NULL,
+    anonimizado  BOOLEAN NOT NULL DEFAULT false
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cliente_email_unico
+ON cliente (LOWER(email));
 
 -- =====================================================================
 -- TABELA: reserva_acervo
 -- Registro de que um exemplar de um livro foi reservado por um
--- usuário, com o funcionário responsável pelo registro
+-- cliente, com o funcionário responsável pelo registro
+-- Depende de: livro, funcionario, cliente
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS reserva_acervo (
-    id                SERIAL PRIMARY KEY,
-    livro_id          INTEGER NOT NULL REFERENCES livro(id)
-                          ON DELETE RESTRICT
-                          ON UPDATE CASCADE,
-    funcionario_id    INTEGER NOT NULL REFERENCES funcionario(id)
-                          ON DELETE RESTRICT
-                          ON UPDATE CASCADE,
-    usuario_id        INTEGER NOT NULL REFERENCES usuario(id)
-                          ON DELETE RESTRICT
-                          ON UPDATE CASCADE,
-    data_reserva      DATE NOT NULL DEFAULT CURRENT_DATE,
-    data_devolucao    DATE,
-    status            VARCHAR(20) NOT NULL DEFAULT 'ativa'
-                          CHECK (status IN ('ativa', 'devolvida', 'atrasada')),
+    id                          SERIAL PRIMARY KEY,
+    livro_id                    INTEGER NOT NULL REFERENCES livro(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    funcionario_id              INTEGER NOT NULL REFERENCES funcionario(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    funcionario_devolucao_id    INTEGER REFERENCES funcionario(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    cliente_id                  INTEGER NOT NULL REFERENCES cliente(id)
+                                    ON DELETE RESTRICT
+                                    ON UPDATE CASCADE,
+    data_reserva                TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_prevista_devolucao     DATE NOT NULL,
+    data_devolucao              TIMESTAMP,
+    status                      VARCHAR(20) NOT NULL DEFAULT 'ativa'
+                                    CHECK (status IN ('ativa', 'devolvida', 'atrasada')),
 
     CONSTRAINT chk_data_devolucao_apos_reserva
-        CHECK (data_devolucao IS NULL OR data_devolucao >= data_reserva)
+        CHECK (data_devolucao IS NULL OR data_devolucao >= data_reserva),
+    CONSTRAINT chk_prevista_apos_reserva
+        CHECK (data_prevista_devolucao >= data_reserva::date)
 );
 
 CREATE INDEX IF NOT EXISTS idx_reserva_livro_id ON reserva_acervo(livro_id);
 CREATE INDEX IF NOT EXISTS idx_reserva_funcionario_id ON reserva_acervo(funcionario_id);
-CREATE INDEX IF NOT EXISTS idx_reserva_usuario_id ON reserva_acervo(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_reserva_cliente_id ON reserva_acervo(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_reserva_status ON reserva_acervo(status);

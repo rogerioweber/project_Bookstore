@@ -1,28 +1,27 @@
-import inquirer from 'inquirer'
-
 import { adminMenuController } from './adminMenuController'
-import { authMenuController } from './authController'
+import { loginMenuController } from './loginMenuController'
+import { consultaPublicaController } from '../controllers/consultaPublicaController'
+import { selecionarOpcao } from '../utils/prompts'
 
 async function menuController(): Promise<boolean> {
   console.log('==============BOOKSTORE==============')
-  const resposta = await inquirer.prompt([
-    {
-      type: 'select',
-      name: 'opcao',
-      message: 'Escolha uma opção',
-      choices: ['Login Administrador', 'Consultar', 'Fechar programa']
-    }
-  ])
 
-  switch (resposta.opcao) {
-    case 'Login Administrador': {
-      const funcionario = await authMenuController()
+  const opcao = await selecionarOpcao('Escolha uma opção', [
+    'Login',
+    'Consultar',
+    'Fechar programa'
+  ] as const)
+
+  switch (opcao) {
+    case 'Login': {
+      const funcionario = await loginMenuController()
       if (funcionario) {
         await adminMenuController(funcionario)
       }
       return true
     }
     case 'Consultar':
+      await consultaPublicaController()
       return true
     case 'Fechar programa':
       return false

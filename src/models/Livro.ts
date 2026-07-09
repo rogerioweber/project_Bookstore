@@ -7,7 +7,12 @@ export interface Livro {
   status: StatusLivro
 }
 
-// Usado nas telas de listagem (autores/categorias vêm concatenados numa string)
+export interface CriarLivroInput {
+  titulo: string
+  totalExemplares: number
+  autorIds: number[]
+  categoriaIds: number[]
+}
 export interface LivroListagem {
   id: number
   titulo: string
@@ -17,7 +22,6 @@ export interface LivroListagem {
   categorias: string | null
 }
 
-// Usado na tela de detalhe/edição (autores/categorias vêm como listas de objetos)
 export interface LivroDetalhado extends Livro {
   autores: { id: number; nome: string }[]
   categorias: { id: number; nome: string }[]
@@ -28,7 +32,11 @@ export type OrdenarLivrosPor = 'titulo' | 'autor' | 'categoria'
 export interface AtualizarLivroInput {
   titulo: string
   totalExemplares: number
-  status: StatusLivro
   autorIds: number[]
   categoriaIds: number[]
+}
+
+export interface LivroComNomesAutores {
+  livro: Livro
+  autores: string[]
 }

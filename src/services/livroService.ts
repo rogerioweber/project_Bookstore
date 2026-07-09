@@ -1,12 +1,16 @@
-import { Livro } from '../models/Livro'
+import {
+  Livro,
+  LivroListagem,
+  LivroDetalhado,
+  OrdenarLivrosPor,
+  AtualizarLivroInput,
+  StatusLivro
+} from '../models/Livro'
 import * as autorRepository from '../repositories/autorRepository'
 import * as categoriaRepository from '../repositories/categoriaRepository'
 import * as livroRepository from '../repositories/livroRepository'
-
-function capitalizar(texto: string): string {
-  const limpo = texto.trim().toLowerCase()
-  return limpo.charAt(0).toUpperCase() + limpo.slice(1)
-}
+import * as reservaRepository from '../repositories/reservaRepository'
+import { capitalizar } from '../utils/texto'
 
 async function buscarOuCriarAutor(nome: string): Promise<number> {
   const nomeNormalizado = capitalizar(nome)
@@ -32,36 +36,38 @@ async function cadastrarLivro(
 ): Promise<Livro> {
   const tituloNormalizado = titulo.trim()
 
-  if (!tituloNormalizado) {
-    throw new Error('O título do livro é obrigatório')
-  }
-  if (totalExemplares < 0) {
-    throw new Error('A quantidade de exemplares não pode ser negativa')
-  }
-  if (nomesAutores.length === 0) {
-    throw new Error('O livro precisa ter ao menos um autor')
-  }
-  if (nomesCategorias.length === 0) {
-    throw new Error('O livro precisa ter ao menos uma categoria')
-  }
+  if (!tituloNormalizado) throw new Error('O título do livro é obrigatório')
+  if (totalExemplares < 0) throw new Error('A quantidade não pode ser negativa')
+  if (nomesAutores.length === 0) throw new Error('Informe ao menos um autor')
+  if (nomesCategorias.length === 0)
+    throw new Error('Informe ao menos uma categoria')
 
-  const livroExistente =
-    await livroRepository.buscarPorTitulo(tituloNormalizado)
-  if (livroExistente) {
+  const autoresNormalizados = nomesAutores
+    .map((nome) => capitalizar(nome))
+    .sort()
+
+  const candidatos =
+    await livroRepository.buscarPorTituloComAutores(tituloNormalizado)
+
+  const duplicado = candidatos.find((candidato) => {
+    const autoresExistentes = [...candidato.autores].sort()
+    return (
+      JSON.stringify(autoresExistentes) === JSON.stringify(autoresNormalizados)
+    )
+  })
+
+  if (duplicado) {
     throw new Error(
-      `Já existe um livro cadastrado com o título "${livroExistente.titulo}"`
+      `Já existe um livro "${duplicado.livro.titulo}" cadastrado com o(s) mesmo(s) autor(es)`
     )
   }
 
   const autorIds: number[] = []
-  for (const nome of nomesAutores) {
-    autorIds.push(await buscarOuCriarAutor(nome))
-  }
+  for (const nome of nomesAutores) autorIds.push(await buscarOuCriarAutor(nome))
 
   const categoriaIds: number[] = []
-  for (const nome of nomesCategorias) {
+  for (const nome of nomesCategorias)
     categoriaIds.push(await buscarOuCriarCategoria(nome))
-  }
 
   return livroRepository.criar({
     titulo: tituloNormalizado,
@@ -71,4 +77,110 @@ async function cadastrarLivro(
   })
 }
 
-export { cadastrarLivro }
+async function listarLivros(
+  ordenarPor: OrdenarLivrosPor
+): Promise<LivroListagem[]> {
+  return livroRepository.listarTodos(ordenarPor)
+}
+
+async function listarLivrosPorAutor(
+  nomeAutor: string
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorAutor(nomeAutor)
+}
+
+async function listarLivrosPorTitulo(
+  tituloBusca: string
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorTituloParcial(tituloBusca)
+}
+
+async function listarLivrosPorTituloOuAutor(
+  termo: string
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorTituloOuAutor(termo)
+}
+
+async function listarLivrosPorCategorias(
+  nomesCategorias: string[]
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorCategorias(nomesCategorias)
+}
+
+async function buscarLivroDetalhado(
+  id: number
+): Promise<LivroDetalhado | null> {
+  return livroRepository.buscarDetalhadoPorId(id)
+}
+
+async function atualizarLivro(
+  id: number,
+  dados: AtualizarLivroInput
+): Promise<Livro> {
+  if (!dados.titulo.trim()) throw new Error('O título do livro é obrigatório')
+  if (dados.totalExemplares < 0)
+    throw new Error('A quantidade não pode ser negativa')
+  return livroRepository.atualizar(id, dados)
+}
+
+async function recalcularStatusLivro(livroId: number): Promise<void> {
+  const livro = await livroRepository.buscarPorId(livroId)
+  if (!livro) return
+
+  const ativas = await reservaRepository.contarAtivasPorLivro(livroId)
+  const novoStatus: StatusLivro =
+    ativas >= livro.total_exemplares ? 'indisponivel' : 'disponivel'
+
+  if (novoStatus !== livro.status) {
+    await livroRepository.atualizarStatus(livroId, novoStatus)
+  }
+}
+
+async function removerLivro(id: number): Promise<boolean> {
+  try {
+    return await livroRepository.deletar(id)
+  } catch (error) {
+    const pgError = error as { code?: string }
+    if (pgError.code === '23001' || pgError.code === '23503') {
+      throw new Error(
+        'Não é possível remover este livro: ele possui histórico de empréstimos registrado.'
+      )
+    }
+    throw error
+  }
+}
+
+async function listarLivrosPorStatus(
+  status: StatusLivro
+): Promise<LivroListagem[]> {
+  return livroRepository.listarPorStatus(status)
+}
+
+async function buscarLivroPorId(id: number): Promise<Livro | null> {
+  return livroRepository.buscarPorId(id)
+}
+
+async function resolverCategoriaIds(
+  nomesCategorias: string[]
+): Promise<number[]> {
+  const ids: number[] = []
+  for (const nome of nomesCategorias)
+    ids.push(await buscarOuCriarCategoria(nome))
+  return ids
+}
+
+export {
+  cadastrarLivro,
+  listarLivros,
+  listarLivrosPorAutor,
+  listarLivrosPorTitulo,
+  listarLivrosPorTituloOuAutor,
+  listarLivrosPorCategorias,
+  buscarLivroDetalhado,
+  atualizarLivro,
+  recalcularStatusLivro,
+  removerLivro,
+  listarLivrosPorStatus,
+  buscarLivroPorId,
+  resolverCategoriaIds
+}
