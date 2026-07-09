@@ -1,14 +1,22 @@
+import { Pool } from 'pg'
+
 import { pool } from '../infra/database/connection'
 import { Funcionario } from '../models/Funcionario'
 
 export class FuncionarioRepository {
-  async criar(
+  private readonly conexao: Pool
+
+  constructor(conexao: Pool = pool) {
+    this.conexao = conexao
+  }
+
+  public async criar(
     nome: string,
     sobrenome: string,
     usuario: string,
     senhaHash: string
   ): Promise<Funcionario> {
-    const result = await pool.query<Funcionario>(
+    const result = await this.conexao.query<Funcionario>(
       `INSERT INTO funcionario (nome, sobrenome, usuario, senha)
        VALUES ($1, $2, $3, $4)
        RETURNING id, nome, sobrenome, usuario, senha`,
@@ -17,8 +25,8 @@ export class FuncionarioRepository {
     return result.rows[0]
   }
 
-  async buscarPorUsuario(usuario: string): Promise<Funcionario | null> {
-    const result = await pool.query<Funcionario>(
+  public async buscarPorUsuario(usuario: string): Promise<Funcionario | null> {
+    const result = await this.conexao.query<Funcionario>(
       `SELECT * FROM funcionario WHERE usuario = $1`,
       [usuario]
     )

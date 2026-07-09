@@ -4,7 +4,10 @@ import {
   buscarClientesPorNome,
   atualizarCliente,
   removerCliente,
-  listarClientes
+  listarClientes,
+  possuiHistorico,
+  anonimizarCliente,
+  possuiEmprestimoAtivo
 } from '../services/clienteService'
 import { listarHistoricoPorCliente } from '../services/reservaService'
 import { consultarComModos } from '../utils/fluxoConsulta'
@@ -35,7 +38,7 @@ async function clienteConsultarController(): Promise<void> {
         }
       }
     ],
-    (c) => `${c.nome} ${c.sobrenome} — CPF: ${c.cpf}`,
+    (c) => `${c.nome} ${c.sobrenome} — CPF: ${c.cpf ?? '-'}`,
     exibirDetalheCliente
   )
 }
@@ -43,7 +46,7 @@ async function clienteConsultarController(): Promise<void> {
 async function exibirDetalheCliente(cliente: Cliente): Promise<void> {
   console.log('\n----- Dados do cliente -----')
   console.log(`Nome: ${cliente.nome} ${cliente.sobrenome}`)
-  console.log(`CPF: ${cliente.cpf}`)
+  console.log(`CPF: ${cliente.cpf ?? '-'}`)
   console.log(`Email: ${cliente.email}`)
   console.log(`Telefone: ${cliente.telefone}`)
   console.log('-----------------------------\n')
@@ -95,6 +98,15 @@ async function atualizarClienteFluxo(cliente: Cliente): Promise<void> {
 }
 
 async function removerClienteFluxo(cliente: Cliente): Promise<void> {
+  const emprestimoAtivo = await possuiEmprestimoAtivo(cliente.id)
+
+  if (emprestimoAtivo) {
+    console.log(
+      'Não é possível remover este cliente: ele ainda possui livro emprestado. Registre a devolução primeiro.'
+    )
+    return
+  }
+
   const confirmado = await confirmar(
     `Tem certeza que deseja remover "${cliente.nome} ${cliente.sobrenome}"?`
   )
@@ -104,12 +116,22 @@ async function removerClienteFluxo(cliente: Cliente): Promise<void> {
     return
   }
 
-  try {
-    await removerCliente(cliente.id)
-    console.log('Cliente removido com sucesso.')
-  } catch (error) {
-    console.log((error as Error).message)
+  const temHistorico = await possuiHistorico(cliente.id)
+
+  if (temHistorico) {
+    try {
+      const anonimizado = await anonimizarCliente(cliente)
+      console.log(
+        `Cliente removido do sistema. Como ele possui histórico de empréstimos, os dados pessoais foram anonimizados (aparece como "${anonimizado.nome} ${anonimizado.sobrenome}" nos registros antigos).`
+      )
+    } catch (error) {
+      console.log((error as Error).message)
+    }
+    return
   }
+
+  await removerCliente(cliente.id)
+  console.log('Cliente removido com sucesso.')
 }
 
 export { clienteConsultarController }

@@ -2,11 +2,11 @@ export interface Cliente {
   id: number
   nome: string
   sobrenome: string
-  cpf: string
+  cpf: string | null
   email: string
   telefone: string
+  anonimizado: boolean
 }
-
 export interface AtualizarClienteInput {
   nome: string
   sobrenome: string
@@ -23,9 +23,4 @@ export interface ClienteComEmprestimoAtivo {
   data_devolucao: string | null
   data_prevista_devolucao: string
   status: string
-}
-
-export interface ConsultarClienteMenuPrompt {
-  opcao:
-    'Listar todos os clientes' | 'Buscar por nome' | 'Buscar por CPF' | 'Voltar'
 }

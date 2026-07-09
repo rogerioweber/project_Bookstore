@@ -7,12 +7,6 @@ export interface Livro {
   status: StatusLivro
 }
 
-export interface CadastroLivro {
-  titulo: string
-  totalExemplares: number
-  autores: string
-  categorias: string
-}
 export interface CriarLivroInput {
   titulo: string
   totalExemplares: number
