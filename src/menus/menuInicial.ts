@@ -4,7 +4,7 @@ import { consultaPublicaController } from '../controllers/consultaPublicaControl
 import { selecionarOpcao } from '../utils/prompts'
 
 async function menuController(): Promise<boolean> {
-  console.log('==============BOOKSTORE==============')
+  console.log('==============BOOKSTORE MANAGER CLI==============')
 
   const opcao = await selecionarOpcao('Escolha uma opção', [
     'Login',

@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS funcionario (
     id          SERIAL PRIMARY KEY,
     nome        VARCHAR(100) NOT NULL,
     sobrenome   VARCHAR(100) NOT NULL,
-    usuario       VARCHAR(25) NOT NULL,
+    usuario       VARCHAR(25) UNIQUE NOT NULL,
     senha       VARCHAR(100) NOT NULL
 );
 
