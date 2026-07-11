@@ -35,7 +35,17 @@ async function selecionarMultiplo<T extends string>(
 
 async function confirmar(mensagem: string, padrao = false): Promise<boolean> {
   const { confirmado } = await inquirer.prompt<{ confirmado: boolean }>([
-    { type: 'confirm', name: 'confirmado', message: mensagem, default: padrao }
+    {
+      type: 'select',
+      name: 'confirmado',
+      message: mensagem,
+      choices: [
+        { name: 'Sim', value: true },
+        { name: 'Não', value: false }
+      ],
+      default: padrao,
+      loop: false
+    }
   ])
   return confirmado
 }

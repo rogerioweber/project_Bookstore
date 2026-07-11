@@ -9,8 +9,21 @@ async function cadastrarFuncionario(
   usuario: string,
   senha: string
 ): Promise<Funcionario> {
+  if (!nome.trim()) throw new Error('O nome é obrigatório')
+  if (!sobrenome.trim()) throw new Error('O sobrenome é obrigatório')
+  if (!usuario.trim()) throw new Error('O usuário é obrigatório')
+  if (!senha.trim()) throw new Error('A senha é obrigatória')
+  if (senha.trim().length < 4) {
+    throw new Error('A senha deve ter no mínimo 4 caracteres')
+  }
+
   const senhaHash = await bcrypt.hash(senha, 10)
-  return funcionarioRepository.criar(nome, sobrenome, usuario, senhaHash)
+  return funcionarioRepository.criar(
+    nome.trim(),
+    sobrenome.trim(),
+    usuario.trim(),
+    senhaHash
+  )
 }
 
 async function autenticarFuncionario(
