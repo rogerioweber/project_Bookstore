@@ -243,6 +243,7 @@ npx eslint .
 ```
 
 ---
+Para assistir a explicação do projeto: https://youtu.be/EhfZkPDFnMw
 
 ## 🌳 Versionamento
 
